@@ -330,10 +330,12 @@ void startMasterSM() {
 
 
 void startSearchSM() {
+    topState = search;
     searchState = searchState_rightIR;
 }
 
 void startAttackSM() {
+    topState = attack;
     attackState = attackState_transition;
 
 #ifdef USE_BALLER
@@ -342,6 +344,7 @@ void startAttackSM() {
 }
 
 void startAvoidTapeSM() {
+    topState = avoidTape;
     avoidTapeState = avoidState_transition;
 }
 
