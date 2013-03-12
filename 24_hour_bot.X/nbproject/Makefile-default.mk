@@ -45,11 +45,19 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Object Files Quoted if spaced
+<<<<<<< HEAD
 OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o ${OBJECTDIR}/src/AD.o ${OBJECTDIR}/src/Bumper.o ${OBJECTDIR}/src/Drive.o ${OBJECTDIR}/src/IR.o ${OBJECTDIR}/src/LED.o ${OBJECTDIR}/src/PORTS.o ${OBJECTDIR}/src/pwm.o ${OBJECTDIR}/src/RCServo.o ${OBJECTDIR}/src/roach.o ${OBJECTDIR}/src/serial.o ${OBJECTDIR}/src/TapeSensor.o ${OBJECTDIR}/src/timers.o ${OBJECTDIR}/src/Util.o ${OBJECTDIR}/_ext/1102761536/baller.o
 POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d ${OBJECTDIR}/src/AD.o.d ${OBJECTDIR}/src/Bumper.o.d ${OBJECTDIR}/src/Drive.o.d ${OBJECTDIR}/src/IR.o.d ${OBJECTDIR}/src/LED.o.d ${OBJECTDIR}/src/PORTS.o.d ${OBJECTDIR}/src/pwm.o.d ${OBJECTDIR}/src/RCServo.o.d ${OBJECTDIR}/src/roach.o.d ${OBJECTDIR}/src/serial.o.d ${OBJECTDIR}/src/TapeSensor.o.d ${OBJECTDIR}/src/timers.o.d ${OBJECTDIR}/src/Util.o.d ${OBJECTDIR}/_ext/1102761536/baller.o.d
 
 # Object Files
 OBJECTFILES=${OBJECTDIR}/main.o ${OBJECTDIR}/src/AD.o ${OBJECTDIR}/src/Bumper.o ${OBJECTDIR}/src/Drive.o ${OBJECTDIR}/src/IR.o ${OBJECTDIR}/src/LED.o ${OBJECTDIR}/src/PORTS.o ${OBJECTDIR}/src/pwm.o ${OBJECTDIR}/src/RCServo.o ${OBJECTDIR}/src/roach.o ${OBJECTDIR}/src/serial.o ${OBJECTDIR}/src/TapeSensor.o ${OBJECTDIR}/src/timers.o ${OBJECTDIR}/src/Util.o ${OBJECTDIR}/_ext/1102761536/baller.o
+=======
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o ${OBJECTDIR}/src/AD.o ${OBJECTDIR}/src/Bumper.o ${OBJECTDIR}/src/Drive.o ${OBJECTDIR}/src/IR.o ${OBJECTDIR}/src/LED.o ${OBJECTDIR}/src/pwm.o ${OBJECTDIR}/src/serial.o ${OBJECTDIR}/src/TapeSensor.o ${OBJECTDIR}/src/timers.o ${OBJECTDIR}/src/Util.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d ${OBJECTDIR}/src/AD.o.d ${OBJECTDIR}/src/Bumper.o.d ${OBJECTDIR}/src/Drive.o.d ${OBJECTDIR}/src/IR.o.d ${OBJECTDIR}/src/LED.o.d ${OBJECTDIR}/src/pwm.o.d ${OBJECTDIR}/src/serial.o.d ${OBJECTDIR}/src/TapeSensor.o.d ${OBJECTDIR}/src/timers.o.d ${OBJECTDIR}/src/Util.o.d
+
+# Object Files
+OBJECTFILES=${OBJECTDIR}/main.o ${OBJECTDIR}/src/AD.o ${OBJECTDIR}/src/Bumper.o ${OBJECTDIR}/src/Drive.o ${OBJECTDIR}/src/IR.o ${OBJECTDIR}/src/LED.o ${OBJECTDIR}/src/pwm.o ${OBJECTDIR}/src/serial.o ${OBJECTDIR}/src/TapeSensor.o ${OBJECTDIR}/src/timers.o ${OBJECTDIR}/src/Util.o
+>>>>>>> sm_code
 
 
 CFLAGS=
@@ -115,25 +123,10 @@ ${OBJECTDIR}/src/LED.o: src/LED.c  nbproject/Makefile-${CND_CONF}.mk
 	@${RM} ${OBJECTDIR}/src/LED.o.d 
 	@${FIXDEPS} "${OBJECTDIR}/src/LED.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/LED.o.d" -o ${OBJECTDIR}/src/LED.o src/LED.c   
 	
-${OBJECTDIR}/src/PORTS.o: src/PORTS.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR}/src 
-	@${RM} ${OBJECTDIR}/src/PORTS.o.d 
-	@${FIXDEPS} "${OBJECTDIR}/src/PORTS.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/PORTS.o.d" -o ${OBJECTDIR}/src/PORTS.o src/PORTS.c   
-	
 ${OBJECTDIR}/src/pwm.o: src/pwm.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} ${OBJECTDIR}/src 
 	@${RM} ${OBJECTDIR}/src/pwm.o.d 
 	@${FIXDEPS} "${OBJECTDIR}/src/pwm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/pwm.o.d" -o ${OBJECTDIR}/src/pwm.o src/pwm.c   
-	
-${OBJECTDIR}/src/RCServo.o: src/RCServo.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR}/src 
-	@${RM} ${OBJECTDIR}/src/RCServo.o.d 
-	@${FIXDEPS} "${OBJECTDIR}/src/RCServo.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/RCServo.o.d" -o ${OBJECTDIR}/src/RCServo.o src/RCServo.c   
-	
-${OBJECTDIR}/src/roach.o: src/roach.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR}/src 
-	@${RM} ${OBJECTDIR}/src/roach.o.d 
-	@${FIXDEPS} "${OBJECTDIR}/src/roach.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/roach.o.d" -o ${OBJECTDIR}/src/roach.o src/roach.c   
 	
 ${OBJECTDIR}/src/serial.o: src/serial.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} ${OBJECTDIR}/src 
@@ -191,25 +184,10 @@ ${OBJECTDIR}/src/LED.o: src/LED.c  nbproject/Makefile-${CND_CONF}.mk
 	@${RM} ${OBJECTDIR}/src/LED.o.d 
 	@${FIXDEPS} "${OBJECTDIR}/src/LED.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/LED.o.d" -o ${OBJECTDIR}/src/LED.o src/LED.c   
 	
-${OBJECTDIR}/src/PORTS.o: src/PORTS.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR}/src 
-	@${RM} ${OBJECTDIR}/src/PORTS.o.d 
-	@${FIXDEPS} "${OBJECTDIR}/src/PORTS.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/PORTS.o.d" -o ${OBJECTDIR}/src/PORTS.o src/PORTS.c   
-	
 ${OBJECTDIR}/src/pwm.o: src/pwm.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} ${OBJECTDIR}/src 
 	@${RM} ${OBJECTDIR}/src/pwm.o.d 
 	@${FIXDEPS} "${OBJECTDIR}/src/pwm.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/pwm.o.d" -o ${OBJECTDIR}/src/pwm.o src/pwm.c   
-	
-${OBJECTDIR}/src/RCServo.o: src/RCServo.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR}/src 
-	@${RM} ${OBJECTDIR}/src/RCServo.o.d 
-	@${FIXDEPS} "${OBJECTDIR}/src/RCServo.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/RCServo.o.d" -o ${OBJECTDIR}/src/RCServo.o src/RCServo.c   
-	
-${OBJECTDIR}/src/roach.o: src/roach.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR}/src 
-	@${RM} ${OBJECTDIR}/src/roach.o.d 
-	@${FIXDEPS} "${OBJECTDIR}/src/roach.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/roach.o.d" -o ${OBJECTDIR}/src/roach.o src/roach.c   
 	
 ${OBJECTDIR}/src/serial.o: src/serial.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} ${OBJECTDIR}/src 
