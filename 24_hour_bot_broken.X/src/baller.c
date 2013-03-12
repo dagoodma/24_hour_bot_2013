@@ -23,7 +23,7 @@
  ******************************************************************************/
 
 int ballerInit() {
-    PORTS_SetPortOutputs(PORTX, 0x0004);         // Set PORTX, pin 3 to output
+    //PORTS_SetPortOutputs(PORTX, 0x0004);         // Set PORTX, pin 3 to output
 }
 
 int ballerStart() {
