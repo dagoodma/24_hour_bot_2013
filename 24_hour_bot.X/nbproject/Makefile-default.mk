@@ -19,7 +19,7 @@ endif
 endif
 
 # Environment
-MKDIR=gnumkdir -p
+MKDIR=mkdir -p
 RM=rm -f 
 MV=mv 
 CP=cp 
@@ -45,11 +45,11 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o ${OBJECTDIR}/src/AD.o ${OBJECTDIR}/src/Bumper.o ${OBJECTDIR}/src/Drive.o ${OBJECTDIR}/src/IR.o ${OBJECTDIR}/src/LED.o ${OBJECTDIR}/src/PORTS.o ${OBJECTDIR}/src/pwm.o ${OBJECTDIR}/src/RCServo.o ${OBJECTDIR}/src/roach.o ${OBJECTDIR}/src/serial.o ${OBJECTDIR}/src/TapeSensor.o ${OBJECTDIR}/src/timers.o ${OBJECTDIR}/src/Util.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d ${OBJECTDIR}/src/AD.o.d ${OBJECTDIR}/src/Bumper.o.d ${OBJECTDIR}/src/Drive.o.d ${OBJECTDIR}/src/IR.o.d ${OBJECTDIR}/src/LED.o.d ${OBJECTDIR}/src/PORTS.o.d ${OBJECTDIR}/src/pwm.o.d ${OBJECTDIR}/src/RCServo.o.d ${OBJECTDIR}/src/roach.o.d ${OBJECTDIR}/src/serial.o.d ${OBJECTDIR}/src/TapeSensor.o.d ${OBJECTDIR}/src/timers.o.d ${OBJECTDIR}/src/Util.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o ${OBJECTDIR}/src/AD.o ${OBJECTDIR}/src/Bumper.o ${OBJECTDIR}/src/Drive.o ${OBJECTDIR}/src/IR.o ${OBJECTDIR}/src/LED.o ${OBJECTDIR}/src/PORTS.o ${OBJECTDIR}/src/pwm.o ${OBJECTDIR}/src/RCServo.o ${OBJECTDIR}/src/roach.o ${OBJECTDIR}/src/serial.o ${OBJECTDIR}/src/TapeSensor.o ${OBJECTDIR}/src/timers.o ${OBJECTDIR}/src/Util.o ${OBJECTDIR}/_ext/1102761536/baller.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d ${OBJECTDIR}/src/AD.o.d ${OBJECTDIR}/src/Bumper.o.d ${OBJECTDIR}/src/Drive.o.d ${OBJECTDIR}/src/IR.o.d ${OBJECTDIR}/src/LED.o.d ${OBJECTDIR}/src/PORTS.o.d ${OBJECTDIR}/src/pwm.o.d ${OBJECTDIR}/src/RCServo.o.d ${OBJECTDIR}/src/roach.o.d ${OBJECTDIR}/src/serial.o.d ${OBJECTDIR}/src/TapeSensor.o.d ${OBJECTDIR}/src/timers.o.d ${OBJECTDIR}/src/Util.o.d ${OBJECTDIR}/_ext/1102761536/baller.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/main.o ${OBJECTDIR}/src/AD.o ${OBJECTDIR}/src/Bumper.o ${OBJECTDIR}/src/Drive.o ${OBJECTDIR}/src/IR.o ${OBJECTDIR}/src/LED.o ${OBJECTDIR}/src/PORTS.o ${OBJECTDIR}/src/pwm.o ${OBJECTDIR}/src/RCServo.o ${OBJECTDIR}/src/roach.o ${OBJECTDIR}/src/serial.o ${OBJECTDIR}/src/TapeSensor.o ${OBJECTDIR}/src/timers.o ${OBJECTDIR}/src/Util.o
+OBJECTFILES=${OBJECTDIR}/main.o ${OBJECTDIR}/src/AD.o ${OBJECTDIR}/src/Bumper.o ${OBJECTDIR}/src/Drive.o ${OBJECTDIR}/src/IR.o ${OBJECTDIR}/src/LED.o ${OBJECTDIR}/src/PORTS.o ${OBJECTDIR}/src/pwm.o ${OBJECTDIR}/src/RCServo.o ${OBJECTDIR}/src/roach.o ${OBJECTDIR}/src/serial.o ${OBJECTDIR}/src/TapeSensor.o ${OBJECTDIR}/src/timers.o ${OBJECTDIR}/src/Util.o ${OBJECTDIR}/_ext/1102761536/baller.o
 
 
 CFLAGS=
@@ -66,7 +66,7 @@ LDLIBSOPTIONS=
 FIXDEPS=fixDeps
 
 .build-conf:  ${BUILD_SUBPROJECTS}
-	${MAKE} ${MAKE_OPTIONS} -f nbproject/Makefile-default.mk dist/${CND_CONF}/${IMAGE_TYPE}/24_hour_bot.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+	${MAKE}  -f nbproject/Makefile-default.mk dist/${CND_CONF}/${IMAGE_TYPE}/24_hour_bot.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
 
 MP_PROCESSOR_OPTION=32MX320F128H
 MP_LINKER_FILE_OPTION=
@@ -155,6 +155,11 @@ ${OBJECTDIR}/src/Util.o: src/Util.c  nbproject/Makefile-${CND_CONF}.mk
 	@${RM} ${OBJECTDIR}/src/Util.o.d 
 	@${FIXDEPS} "${OBJECTDIR}/src/Util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/Util.o.d" -o ${OBJECTDIR}/src/Util.o src/Util.c   
 	
+${OBJECTDIR}/_ext/1102761536/baller.o: /Users/vharn/Documents/24_hour_bot_2013/24_hour_bot.X/src/baller.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} ${OBJECTDIR}/_ext/1102761536 
+	@${RM} ${OBJECTDIR}/_ext/1102761536/baller.o.d 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1102761536/baller.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/_ext/1102761536/baller.o.d" -o ${OBJECTDIR}/_ext/1102761536/baller.o /Users/vharn/Documents/24_hour_bot_2013/24_hour_bot.X/src/baller.c   
+	
 else
 ${OBJECTDIR}/main.o: main.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} ${OBJECTDIR} 
@@ -226,6 +231,11 @@ ${OBJECTDIR}/src/Util.o: src/Util.c  nbproject/Makefile-${CND_CONF}.mk
 	@${RM} ${OBJECTDIR}/src/Util.o.d 
 	@${FIXDEPS} "${OBJECTDIR}/src/Util.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/src/Util.o.d" -o ${OBJECTDIR}/src/Util.o src/Util.c   
 	
+${OBJECTDIR}/_ext/1102761536/baller.o: /Users/vharn/Documents/24_hour_bot_2013/24_hour_bot.X/src/baller.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} ${OBJECTDIR}/_ext/1102761536 
+	@${RM} ${OBJECTDIR}/_ext/1102761536/baller.o.d 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/1102761536/baller.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"include/" -MMD -MF "${OBJECTDIR}/_ext/1102761536/baller.o.d" -o ${OBJECTDIR}/_ext/1102761536/baller.o /Users/vharn/Documents/24_hour_bot_2013/24_hour_bot.X/src/baller.c   
+	
 endif
 
 # ------------------------------------------------------------------------------------
@@ -245,7 +255,7 @@ else
 dist/${CND_CONF}/${IMAGE_TYPE}/24_hour_bot.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk   
 	@${MKDIR} dist/${CND_CONF}/${IMAGE_TYPE} 
 	${MP_CC} $(MP_EXTRA_LD_PRE)  -mprocessor=$(MP_PROCESSOR_OPTION)  -o dist/${CND_CONF}/${IMAGE_TYPE}/24_hour_bot.X.${IMAGE_TYPE}.${DEBUGGABLE_SUFFIX} ${OBJECTFILES_QUOTED_IF_SPACED}          -Wl,--defsym=__MPLAB_BUILD=1$(MP_EXTRA_LD_POST)$(MP_LINKER_FILE_OPTION)
-	${MP_CC_DIR}\\xc32-bin2hex dist/${CND_CONF}/${IMAGE_TYPE}/24_hour_bot.X.${IMAGE_TYPE}.${DEBUGGABLE_SUFFIX} 
+	${MP_CC_DIR}/xc32-bin2hex dist/${CND_CONF}/${IMAGE_TYPE}/24_hour_bot.X.${IMAGE_TYPE}.${DEBUGGABLE_SUFFIX} 
 endif
 
 
@@ -264,7 +274,7 @@ endif
 # Enable dependency checking
 .dep.inc: .depcheck-impl
 
-DEPFILES=$(shell mplabwildcard ${POSSIBLE_DEPFILES})
+DEPFILES=$(shell "${PATH_TO_IDE_BIN}"mplabwildcard ${POSSIBLE_DEPFILES})
 ifneq (${DEPFILES},)
 include ${DEPFILES}
 endif

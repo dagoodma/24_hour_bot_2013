@@ -7,7 +7,8 @@
  *
  */
 
-#include <p32xxxx.h>
+#include <xc.h>
+#include <stdio.h>
 #include "serial.h"
 #include "timers.h"
 #include "PORTS.h"
@@ -18,7 +19,7 @@
 
 //#define USE_LEDS
 //#define USE_SAMPLING
-//#define IR_TEST
+#define IR_TEST
 
 #define DEBUG_VERBOSE
 #ifdef DEBUG_VERBOSE
@@ -30,13 +31,13 @@
 #define UPDATE_DELAY 1
 
 
-#define IR_MAIN AD_PORTW6
-#define IR_ANGLE AD_PORTW7
+#define IR_LEFT AD_PORTW6
+#define IR_RIGHT AD_PORTW7
 
-#define MAIN_HIGH_THRESHOLD 299
-#define MAIN_LOW_THRESHOLD 279
-#define ANGLE_HIGH_THRESHOLD 962
-#define ANGLE_LOW_THRESHOLD 943
+#define LEFT_HIGH_THRESHOLD 299
+#define LEFT_LOW_THRESHOLD 279
+#define RIGHT_HIGH_THRESHOLD 962
+#define RIGHT_LOW_THRESHOLD 943
 
 #define MAXCOUNT 4
 
@@ -46,17 +47,17 @@
  ******************************************************************************/
 static unsigned char timesCounted = 0;
 
-enum { IR_MAIN_I, IR_ANGLE_I };
+enum { IR_LEFT_I, IR_RIGHT_I };
 
 static unsigned int irState[] = { 0, 0 };
-static unsigned int irThreshold[] = { MAIN_HIGH_THRESHOLD, ANGLE_HIGH_THRESHOLD };
+static unsigned int irThreshold[] = { LEFT_HIGH_THRESHOLD, RIGHT_HIGH_THRESHOLD };
 static unsigned char irCounter[] = { 0, 0};
 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                *
  ******************************************************************************/
-char IsAngleTriggered(void);
-char IsMainTriggered(void);
+char IsLeftTriggered(void);
+char IsRightTriggered(void);
 void UpdateCounters();
 
 /*******************************************************************************
@@ -67,19 +68,19 @@ void UpdateCounters();
  * @remark Updates the IR sensor counts by comparing them with hysteretic thresholds.
  * @date 2012.3.5 12:47 */
 void UpdateCounters() {
-    char result = IsMainTriggered();
-    irCounter[IR_MAIN_I] += result;
+    char result = IsLeftTriggered();
+    irCounter[IR_LEFT_I] += result;
     // Check angle sensor
-    result = IsAngleTriggered();
-    irCounter[IR_ANGLE_I]+= result;
+    result = IsRightTriggered();
+    irCounter[IR_RIGHT_I]+= result;
 
     //printf("\nMain counter=%d, angle=%d",irCounter[IR_MAIN_I], irCounter[IR_ANGLE_I]);
 
     timesCounted++;
 
     if (timesCounted >= MAXCOUNT) {
-        result = irCounter[IR_MAIN_I] >= MAXCOUNT;
-        irState[IR_MAIN_I] = result;
+        result = irCounter[IR_LEFT_I] >= MAXCOUNT;
+        irState[IR_LEFT_I] = result;
 
         #ifdef USE_LEDS
         if (result)
@@ -89,12 +90,12 @@ void UpdateCounters() {
         #endif
 
         if (result)
-            irThreshold[IR_MAIN_I] = MAIN_LOW_THRESHOLD;
+            irThreshold[IR_LEFT_I] = LEFT_LOW_THRESHOLD;
         else
-            irThreshold[IR_MAIN_I] = MAIN_HIGH_THRESHOLD;
+            irThreshold[IR_LEFT_I] = LEFT_HIGH_THRESHOLD;
 
-        result = irCounter[IR_ANGLE_I] >= MAXCOUNT;
-        irState[IR_ANGLE_I] = result;
+        result = irCounter[IR_RIGHT_I] >= MAXCOUNT;
+        irState[IR_RIGHT_I] = result;
 
         #ifdef USE_LEDS
         if (result)
@@ -104,34 +105,34 @@ void UpdateCounters() {
         #endif
 
         if (result)
-            irThreshold[IR_ANGLE_I] = ANGLE_LOW_THRESHOLD;
+            irThreshold[IR_RIGHT_I] = RIGHT_LOW_THRESHOLD;
         else
-            irThreshold[IR_ANGLE_I] = ANGLE_HIGH_THRESHOLD;
+            irThreshold[IR_RIGHT_I] = RIGHT_HIGH_THRESHOLD;
 
         // Clear counters
         timesCounted = 0;
-        irCounter[IR_MAIN_I] = 0;
-        irCounter[IR_ANGLE_I] = 0;
+        irCounter[IR_LEFT_I] = 0;
+        irCounter[IR_RIGHT_I] = 0;
     }
 }
 
 /**
- * @Function: IsAngleTriggered
+ * @Function: IsRightTriggered
  * @return TRUE or FALSE 
  * @remark When angled beacon is high.
  * @date 2012.3.5 12:47 */
-char IsAngleTriggered() {
-    unsigned int val = ReadADPin(IR_ANGLE);
+char IsRightTriggered() {
+    unsigned int val = ReadADPin(IR_RIGHT);
     //dbprintf("\nAngle=%d", val);
-    if (val > irThreshold[IR_ANGLE_I]) {
+    if (val > irThreshold[IR_RIGHT_I]) {
 #ifndef USE_SAMPLING
-        irThreshold[IR_ANGLE_I] = ANGLE_LOW_THRESHOLD;
+        irThreshold[IR_RIGHT_I] = RIGHT_LOW_THRESHOLD;
 #endif
         return ON;
     }
-    if (val < irThreshold[IR_ANGLE_I]) {
+    if (val < irThreshold[IR_RIGHT_I]) {
         #ifndef USE_SAMPLING
-        irThreshold[IR_ANGLE_I] = ANGLE_HIGH_THRESHOLD;
+        irThreshold[IR_RIGHT_I] = RIGHT_HIGH_THRESHOLD;
         #endif
         return OFF;
     }
@@ -139,18 +140,18 @@ char IsAngleTriggered() {
 }
 
 
-char IsMainTriggered() {
-    unsigned int val = ReadADPin(IR_MAIN);
+char IsLeftTriggered() {
+    unsigned int val = ReadADPin(IR_LEFT);
     //dbprintf("\nMain=%d", val);
-    if (val > irThreshold[IR_MAIN_I]) {
+    if (val > irThreshold[IR_LEFT_I]) {
         #ifndef USE_SAMPLING
-        irThreshold[IR_MAIN_I] = MAIN_LOW_THRESHOLD;
+        irThreshold[IR_LEFT_I] = LEFT_LOW_THRESHOLD;
 #endif
         return ON;
     }
-    if (val < irThreshold[IR_MAIN_I]) {
+    if (val < irThreshold[IR_LEFT_I]) {
         #ifndef USE_SAMPLING
-        irThreshold[IR_MAIN_I] = MAIN_HIGH_THRESHOLD; 
+        irThreshold[IR_LEFT_I] = LEFT_HIGH_THRESHOLD;
         #endif
 return OFF;
     }
@@ -206,30 +207,30 @@ char IR_Update() {
      return TRUE;
 }
 
-char IR_MainTriggered() {
+char IR_LeftTriggered() {
 #ifdef USE_SAMPLING
     IR_Update();
     return irState[IR_MAIN_I];
 #else
-    return IsMainTriggered();
+    return IsLeftTriggered();
 #endif
 }
 
-char IR_AngleTriggered() {
+char IR_RightTriggered() {
     #ifdef USE_SAMPLING
     IR_Update();
     return irState[IR_ANGLE_I];
 #else 
-    return IsAngleTriggered();
+    return IsRightTriggered();
     #endif
 }
 
-unsigned int IR_MainReading() {
-    return ReadADPin(IR_MAIN);
+unsigned int IR_LeftReading() {
+    return ReadADPin(IR_LEFT);
 }
 
-unsigned int IR_AngleReading() {
-    return ReadADPin(IR_ANGLE);
+unsigned int IR_RightReading() {
+    return ReadADPin(IR_RIGHT);
 }
 
 char IR_End() {
@@ -250,6 +251,7 @@ char IR_End() {
 #define DELAY() for(i=0;i < NOPCOUNT; i++) __asm("nop")
 
 int main(void) {
+
     SERIAL_Init();
     TIMERS_Init();
     char i, j = 0;
@@ -260,20 +262,22 @@ int main(void) {
     IR_Init();
 
     while (1) {
-        k = ReadADPin(IR_MAIN);
-        l = ReadADPin(IR_ANGLE);
-		char mainTrig = '_';
-		char angleTrig = '_';
-		if (IR_MainTriggered())
-			mainTrig = 'x';
-		if (IR_AngleTriggered())
-			angleTrig = 'x';
+        k = ReadADPin(IR_LEFT);
+        l = ReadADPin(IR_RIGHT);
+		char leftTrig = '_';
+		char rightTrig = '_';
+		if (IR_LeftTriggered())
+			leftTrig = 'x';
+		if (IR_RightTriggered())
+			rightTrig = 'x';
 			
         //if (time > GetTime() + 500) {
-            dbprintf("\n %cMain : %d \n %cAngle : %d",mainTrig, k, angleTrig, l);
+            if (IsTransmitEmpty()) {
+                printf("\n %cLeft : %d \n %cRight : %d",leftTrig, k, rightTrig, l);
+            }
             //time = GetTime();
         //}
-        while (!IsTransmitEmpty()); // bad, this is blocking code
+        //while (!IsTransmitEmpty()); // bad, this is blocking code
     }
     return 0;
 }

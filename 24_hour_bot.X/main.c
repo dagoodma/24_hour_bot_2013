@@ -5,7 +5,7 @@
  * Created on February 21, 2012, 7:46 PM
  */
 
-#define USE_MAIN
+//#define USE_MAIN
 
 //#define DEBUG
 

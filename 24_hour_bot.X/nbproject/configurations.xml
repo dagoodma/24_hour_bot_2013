@@ -39,6 +39,7 @@
       <itemPath>src/TapeSensor.c</itemPath>
       <itemPath>src/timers.c</itemPath>
       <itemPath>src/Util.c</itemPath>
+      <itemPath>/Users/vharn/Documents/24_hour_bot_2013/24_hour_bot.X/src/baller.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -57,7 +58,7 @@
         <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC32</languageToolchain>
         <languageToolchainVersion>1.20</languageToolchainVersion>
-        <platform>3</platform>
+        <platform>4</platform>
       </toolsSet>
       <compileType>
         <linkerTool>

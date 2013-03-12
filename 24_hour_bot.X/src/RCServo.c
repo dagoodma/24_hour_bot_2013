@@ -6,10 +6,10 @@
  */
 //#define RCSERVO_TEST
 
-#include <p32xxxx.h>
+#include <xc.h>
 #include <plib.h>
 #include "RCServo.h"
-#include "bits.h"
+//#include "bits.h"
 #include <stdio.h>
 #include "serial.h"
 

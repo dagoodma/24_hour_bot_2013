@@ -5,12 +5,12 @@
  * Created on December 26, 2011, 11:22 PM
  */
 
-#include <p32xxxx.h>
+#include <xc.h>
 #include <plib.h>
 #include <stdio.h>
 #include "serial.h"
 #include "PORTS.h"
-#include "bits.h"
+//#include "bits.h"
 
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
