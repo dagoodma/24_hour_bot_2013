@@ -68,7 +68,8 @@ static enum { search, attack, avoidTape} topState;
 //-------- Search state variables -----------
 
 static enum { searchState_rightIR, searchState_leftIR } searchState;
-static enum { searchEvent_none, searchEvent_found } searchEvent;
+static enum { searchEvent_none, searchEvent_bothFound, searchEvent_rightFound,
+    searchEvent_leftFound, searchEvent_bothLost } searchEvent;
 
 //-------- Attack state variables -----------
 
@@ -101,76 +102,9 @@ void startAvoidTapeSM();
 
 
 
-#ifdef DEBUG
-     //printf("\nReturn  STATE=%u EVENT=%u", returnState, returnEvent);
-#endif
-    UpdateReturnIslandEvent();
-
-    switch(returnState) {
-        case return_left:
-            //printf("A");
-            if (returnEvent == return_lefted) {
-                //InitTimer(TIMER_RETURN, RETURN_COLLIDE_TIMEOUT);
-                InitTimer(TIMER_RETURN, RETURN_TAPE_DELAY);
-                returnState = return_forward;
-            }
-            else {
-                Drive_Turn(pivot, left, HALF_SPEED);
-            }
-            break;
-        case return_forward:
-            //printf("B");
-            if (returnEvent == return_hitobstacle) {
-                returnState = return_avoidobstacle;
-                InitAvoidObstacleSM();
-            }
-            else if (returnEvent == return_hittape) {
-                // EXIT caller picks this up
-                Drive_Stop();
-            }
-            /*
-            else if (returnEvent == return_hitwall) {
-                returnState = return_uturn;
-                InitTimer(TIMER_RETURN,RETURN_LEFT_DELAY);
-            }
-             * */
-
-            else if (returnEvent == return_goright) {
-                returnState = return_right;
-                InitTimer(TIMER_RETURN, RETURN_RIGHT_DELAY);
-            }
-            else {
-
-                Drive_Forward(HALF_SPEED);
-            }
-            break;
-        case return_avoidobstacle:
-            //printf("C");
-            DuringAvoidObstacleSM();
-            if (avoidEvent == obstacle_forwarded) {
-                returnState = return_forward;
-            }
-            break;
-        case return_right:
-            //printf("D");
-            if (returnEvent == return_righted)
-                returnState = return_forward;
-            else
-                Drive_Turn(soft,right,HALF_SPEED);
-            break;
-         /*
-        case return_uturn:
-            if (returnEvent == return_uturned)
-                returnState = return_forward;
-            else
-                Drive_Turn(pivot, right, MID_SPEED);
-            break;
-       */
-    } // switch
-}
-
-
-
+/*******************************************************************************
+ * PRIVATE FUNCTIONS                                                           *
+ ******************************************************************************/
 
 void checkSearchEvents() {
     searchEvent = searchEvent_none;
@@ -178,8 +112,31 @@ void checkSearchEvents() {
     switch(searchState) {
         case searchState_rightIR:
             if (!IR_LeftTriggered() && IR_RightTriggered())
-                searchEvent = searchEvent_
+                searchEvent = searchEvent_rightFound;
+            else if (IR_LeftTriggered() && IR_RightTriggered())
+                searchEvent = searchEvent_searchEvent_bothFound;
+            break;
+        case searchState_leftIR:
+            if (!IR_LeftTriggered() && !IR_RightTriggered())
+                searchEvent = searchEvent_bothLost;
+            else if (IR_LeftTriggered() && IR_RightTriggered())
+                searchEvent = searchEvent_bothfound;
+            break;
+        default:
+            // Shouldn't be here
+            break;
     }
+}
+
+void doSearchSM() {
+
+    UpdateAvoidObstacleEvent();
+    #ifdef DEBUG
+     //printf("\nObstacle  STATE=%u EVENT=%u", obstacleState, obstacleEvent);
+#endif
+
+    switch(obstacleState) {
+        case obstacle_transition:
 }
 
 void UpdateReturnIslandEvent() {
