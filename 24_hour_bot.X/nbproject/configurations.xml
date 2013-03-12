@@ -12,7 +12,6 @@
       <itemPath>include/PORTS.h</itemPath>
       <itemPath>include/pwm.h</itemPath>
       <itemPath>include/RCServo.h</itemPath>
-      <itemPath>include/roach.h</itemPath>
       <itemPath>include/serial.h</itemPath>
       <itemPath>include/TapeSensor.h</itemPath>
       <itemPath>include/timers.h</itemPath>
@@ -31,10 +30,7 @@
       <itemPath>src/Drive.c</itemPath>
       <itemPath>src/IR.c</itemPath>
       <itemPath>src/LED.c</itemPath>
-      <itemPath>src/PORTS.c</itemPath>
       <itemPath>src/pwm.c</itemPath>
-      <itemPath>src/RCServo.c</itemPath>
-      <itemPath>src/roach.c</itemPath>
       <itemPath>src/serial.c</itemPath>
       <itemPath>src/TapeSensor.c</itemPath>
       <itemPath>src/timers.c</itemPath>
