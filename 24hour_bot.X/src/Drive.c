@@ -4,9 +4,9 @@
  *
  * Created on March 2, 2012
  */
-//#define DRIVE_TEST
+#define DRIVE_TEST
 
-#include <p32xxxx.h>
+#include <xc.h>
 #include "serial.h"
 #include "PORTS.h"
 #include "pwm.h"
@@ -268,9 +268,7 @@ char Drive_Stop(void) {
 #define NOPCOUNT 990000
 
 char main(){
-
     int i;
-    int j;
     SERIAL_Init();
     INTEnableSystemMultiVectoredInt();
     Drive_Init();
@@ -282,91 +280,11 @@ char main(){
     int pwm;
 
     while(1) {
-        printf("\n batt voltage: %d", ReadADPin(BAT_VOLTAGE));
-       Drive_Stop(); DELAY();
-
-       for (j = 10; j >= 0; j--) {
-        Drive_Forward(j);
-        printf("\nFORWARD! speed=%u pwm=%u", motorSpeed[A], motorPWMValue[A]);
-        DELAY(); Drive_Stop(); DELAY();
-       }
-       Drive_Forward(10);
-       DELAY();
-       Drive_Forward(5);
-       DELAY();
-       Drive_Reverse(10);
-       DELAY();
-        /*
+        //Drive_Stop();
+        DELAY();
         Drive_Forward(10);
-        DELAY();
-        pwm = 80 * 10 + (200.0*(1.0 - 1.0*((float)ReadADPin(BAT_VOLTAGE)/(BAT_MAX))) * 2.15);
-        printf("\n 10 speed pwm  set to:  %d",pwm);
-        DELAY();
-        printf("\nFORWARD!");
-        Drive_Forward(8);
-        DELAY();
-        pwm = 80 * 8 + (200.0*(1.0 - 1.0*((float)ReadADPin(BAT_VOLTAGE)/(BAT_MAX))) * 2.15);
-        printf("\n 8 speed pwm  set to:  %d",pwm);
-        DELAY();
-        printf("\nFORWARD!");
-        Drive_Forward(3);
-        DELAY();
-        pwm = 80 * 3 + (200.0*(1.0 - 1.0*((float)ReadADPin(BAT_VOLTAGE)/(BAT_MAX))) * 2.15);
-        printf("\n 3 speed pwm  set to:  %d",pwm);
-        Drive_Stop();
-        DELAY();
-
-        printf("\nhard right !");
-        Drive_Turn(hard, right, 7);
-        DELAY();
-        pwm = 7 * 80.0 + (200.0*(1.0 - 1.0*((float)ReadADPin(BAT_VOLTAGE)/(BAT_MAX))) * 2.15);
-         DELAY();
-        printf("\n 7 speed pwm  set to:  %d",pwm);
-        DELAY();
-        DELAY();
-
-        Drive_Stop();
-        DELAY();
-        printf("\nsoft right!");
-        Drive_Turn(hard, opposite, 10);
-        pwm = 10 * 80.0 + (200.0*(1.0 - 1.0*((float)ReadADPin(BAT_VOLTAGE)/(BAT_MAX))) * 2.15);
-        DELAY();
-        printf("\n 10 speed pwm  set to:  %d",pwm);
-        DELAY();
-        DELAY();
-        DELAY();
-        Drive_Stop();
-        DELAY();
-        /*
-
-      printf("\nPivot Left!");
-        Drive_Turn(soft, left, 9);
-        DELAY();
-        DELAY();
-        DELAY();
-
-        Drive_Stop();
-        DELAY();
-        printf("\nPIVOT opposite!");
-        Drive_Turn(pivot, right, 9);
-        DELAY();
-        DELAY();
-        DELAY();
-        Drive_Stop();
-        DELAY();
-        /*
-        printf("\nPIVOT right!");
-        Drive_Turn(pivot, right, 9);
-		Drive_Stop();
-        DELAY();
-        printf("\nPIVOT opposite!");
-        Drive_Turn(pivot, opposite, 9);
-        DELAY();
-        DELAY();
-        DELAY();
-
-
-*/    }
+        printf("\nFORWARD! speed=%u pwm=%u", motorSpeed[A], motorPWMValue[A]);
+    }
 }
 
 #endif

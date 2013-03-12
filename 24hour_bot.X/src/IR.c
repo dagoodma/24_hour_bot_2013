@@ -19,7 +19,7 @@
 
 //#define USE_LEDS
 //#define USE_SAMPLING
-#define IR_TEST
+//#define IR_TEST
 
 #define DEBUG_VERBOSE
 #ifdef DEBUG_VERBOSE
