@@ -262,6 +262,7 @@ char Drive_Stop(void) {
 /*******************************************************************************
  * TEST HARNESS                                                                *
  ******************************************************************************/
+#define DRIVE_TEST
 #ifdef DRIVE_TEST
 
 #define DELAY() for(i=0;i < NOPCOUNT; i++) __asm("nop")
@@ -284,6 +285,26 @@ char main(){
         DELAY();
         Drive_Forward(10);
         printf("\nFORWARD! speed=%u pwm=%u", motorSpeed[A], motorPWMValue[A]);
+        DELAY();
+        DELAY();
+        DELAY();
+        DELAY();
+        DELAY();
+        DELAY();
+        Drive_Turn(pivot,left,HALF_SPEED);
+        DELAY();
+        DELAY();
+        DELAY();
+        DELAY();
+        DELAY();
+        DELAY();
+        Drive_Turn(pivot,right,HALF_SPEED);
+        DELAY();
+        DELAY();
+        DELAY();
+        DELAY();
+        DELAY();
+        DELAY();
     }
 }
 
