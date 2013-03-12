@@ -19,7 +19,7 @@
 
 //#define USE_LEDS
 //#define USE_SAMPLING
-#define IR_TEST
+//#define IR_TEST
 
 #define DEBUG_VERBOSE
 #ifdef DEBUG_VERBOSE
@@ -27,7 +27,7 @@
 #else
 #define dbprintf(...)
 #endif
-#define TIMER_NUM 4
+#define TIMER_IR 4
 #define UPDATE_DELAY 1
 
 
@@ -170,7 +170,7 @@ char IR_Init() {
 
     #endif
 
-    InitTimer(TIMER_NUM, UPDATE_DELAY);
+    InitTimer(TIMER_IR, UPDATE_DELAY);
 
     return SUCCESS;
 }
@@ -178,7 +178,7 @@ char IR_Init() {
 char IR_Update() {
     // Check main sensor
 #ifdef USE_SAMPLING
-    if (IsTimerExpired(TIMER_NUM)) {
+    if (IsTimerExpired(TIMER_IR)) {
         /*
         char result = IsMainTriggered();
         #ifdef USE_LEDS
@@ -200,7 +200,7 @@ char IR_Update() {
          irState[IR_ANGLE_I] = result;
          */
         UpdateCounters();
-        InitTimer(TIMER_NUM, UPDATE_DELAY);
+        InitTimer(TIMER_IR, UPDATE_DELAY);
      }
 #endif
 

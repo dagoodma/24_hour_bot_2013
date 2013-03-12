@@ -27,29 +27,14 @@
 #define TRUE 1
 #endif
 
-enum sensorIndex { TAPE_LEFT_I, TAPE_CENTER_I, TAPE_RIGHT_I, TAPE_BACK_I,
-    TAPE_ARMFRONT_I, TAPE_ARMLEFT_I, TAPE_ARMRIGHT_I };
-
-
+enum sensorIndex { TAPE_FRONTLEFT_I, TAPE_FRONTRIGHT_I, TAPE_BACKRIGHT_I,
+    TAPE_BACKLEFT_I };
 //--------------- Photodetectors --------------
-#define TAPE_LEFT   AD_PORTV5
-#define TAPE_CENTER AD_PORTV6
-#define TAPE_RIGHT AD_PORTV7
-#define TAPE_BACK AD_PORTV8
-#define TAPE_ARMFRONT AD_PORTW3
-#define TAPE_ARMLEFT AD_PORTW4
-#define TAPE_ARMRIGHT AD_PORTW5
 
-
-/*
-#define TAPE_LEFT 0x001      // PortV-5
-#define TAPE_CENTER 0x002    // PortV-6
-#define TAPE_RIGHT 0x004     // PortV-7
-#define TAPE_BACK 0x008      // PortV-8
-#define TAPE_ARMFRONT 0x010  // PortW-3
-#define TAPE_ARMLEFT 0x020   // PortW-4
-#define TAPE_ARMRIGHT 0x040  // PortW-5
-*/
+#define TAPE_FRONTLEFT  AD_PORTV5
+#define TAPE_FRONTRIGHT AD_PORTV6
+#define TAPE_BACKLEFT   AD_PORTV7
+#define TAPE_BACKRIGHT  AD_PORTV8
 
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES                                                  *
@@ -82,78 +67,19 @@ char Tape_End();
 
 
 // ********************* Tape Sensor Accessors *************************
-/**
- * @Function: Tape_LeftTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if the left tape sensor is triggered.
- * @date 2012.2.27 05:42 */
-char Tape_LeftTriggered();
 
-/**
- * @Function: Tape_CenterTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if the center tape sensor is triggered.
- * @date 2012.2.27 05:42 */
-char Tape_CenterTriggered();
+char Tape_FrontLeftTriggered();
 
-/**
- * @Function: Tape_RightTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if the right tape sensor is triggered.
- * @date 2012.2.27 05:42 */
-char Tape_RightTriggered();
+char Tape_FrontRightTriggered();
 
-/**
- * @Function: Tape_BackTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if the back tape sensor is triggered.
- * @date 2012.2.27 05:42 */
-char Tape_BackTriggered();
+char Tape_BackRightTriggered();
 
-/**
- * @Function: Tape_ArmFrontTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if the arm's front tape sensor is
- *         triggered.
- * @date 2012.2.27 05:42 */
-char Tape_ArmFrontTriggered();
+char Tape_BackLeftTriggered();
 
-/**
- * @Function: Tape_ArmLeftTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if the arm's left tape sensor is
- *         triggered.
- * @date 2012.2.27 05:42 */
-char Tape_ArmLeftTriggered();
-
-/**
- * @Function: Tape_ArmRightTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if the arm's right tape sensor is
- *         triggered.
- * @date 2012.2.27 05:42 */
-char Tape_ArmRightTriggered();
-
-/**
- * @Function: Tape_AnyTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if any tape sensor is triggered.
- * @date 2012.2.27 05:42 */
 char Tape_AnyTriggered();
 
-/**
- * @Function: Tape_AnyRightTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if right tape sensor or any arm sensor
- *  triggered is triggered.
- * @date */
-char Tape_AnyRightTriggered();
+char Tape_AnyBackTriggered();
 
-/**
- * @Function: Tape_AnyRightTriggered
- * @return TRUE or FALSE value
- * @remark Returns a TRUE value if any front tape sensor is triggered.
- * @date */
 char Tape_AnyFrontTriggered();
 
 

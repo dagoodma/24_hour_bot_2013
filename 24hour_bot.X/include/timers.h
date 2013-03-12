@@ -22,6 +22,14 @@
 #define TIMER_NOT_ACTIVE 0
 #define TIMER_NOT_EXPIRED 0
 
+// -------------- Timer Allocation ----------------
+#define TIMER_BUMPER            2
+#define TIMER_TAPE              3
+#define TIMER_IR                4
+#define TIMER_START             6
+#define TIMER_ATTACK            7
+#define TIMER_TAPEAVOID         8
+
 
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES                                                  *

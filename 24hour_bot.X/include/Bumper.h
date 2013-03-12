@@ -9,8 +9,8 @@
  * Created on February 25, 2012, 7:50 PM
  */
 
-#ifndef TapeSensor_H
-#define TapeSensor_H
+#ifndef Bumper_H
+#define Bumper_H
 
 /*******************************************************************************
  * PUBLIC #DEFINES                                                             *
@@ -46,33 +46,19 @@ char Bumper_Init();
  */
 char Bumper_Update();
 
-/**
- * Function: Bumper_AnyTriggered
- * @return TRUE or FALSE
- * @remark Whether any bumper has been triggered.
- */
+char Bumper_FrontLeftTriggered();
+
+char Bumper_FrontRightTriggered();
+
+char Bumper_BackRightTriggered();
+
+char Bumper_BackLeftTriggered();
+
 char Bumper_AnyTriggered();
 
-/**
- * Function: Bumper_LeftTriggered
- * @return TRUE or FALSE
- * @remark Whether the left bumper has been triggered.
- */
-char Bumper_LeftTriggered();
+char Bumper_AnyFrontTriggered();
 
-/**
- * Function: Bumper_CenterTriggered
- * @return TRUE or FALSE
- * @remark Whether the center bumper has been triggered.
- */
-char Bumper_CenterTriggered();
-
-/**
- * Function: Bumper_RightTriggered
- * @return TRUE or FALSE
- * @remark Whether the right bumper has been triggered.
- */
-char Bumper_RightTriggered();
+char Bumper_AnyBackTriggered();
 
 /**
  * Function: Bumper_End

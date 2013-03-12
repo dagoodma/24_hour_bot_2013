@@ -6,7 +6,7 @@
  *
  */
 
-#include <p32xxxx.h>
+#include <xc.h>
 #include "serial.h"
 #include "timers.h"
 #include "PORTS.h"
@@ -25,17 +25,20 @@
     #define dbprintf(...)
 #endif
 
-#define TIMER_NUM 2
+#define TIMER_BUMPER 2
 #define UPDATE_DELAY 50 // ms
 
-#define BUMPERCOUNT 3
+#define BUMPERCOUNT 4
 
-#define BUMPER_RIGHT_BIT PORTZ03_BIT // _RE4
-#define BUMPER_RIGHT_TRIS PORTZ03_TRIS
-#define BUMPER_LEFT_BIT PORTZ04_BIT
-#define BUMPER_LEFT_TRIS PORTZ04_TRIS
-#define BUMPER_CENTER_BIT PORTZ05_BIT
-#define BUMPER_CENTER_TRIS PORTZ05_TRIS
+#define BUMPER_FRONTRIGHT_BIT       PORTZ04_BIT // _RE4
+#define BUMPER_FRONTRIGHT_TRIS      PORTZ04_TRIS
+#define BUMPER_FRONTLEFT_BIT        PORTZ03_BIT // _RE4
+#define BUMPER_FRONTLEFT_TRIS       PORTZ03_TRIS
+#define BUMPER_BACKRIGHT_BIT        PORTZ05_BIT
+#define BUMPER_BACKRIGHT_TRIS       PORTZ05_TRIS
+#define BUMPER_BACKLEFT_BIT         PORTZ06_BIT
+#define BUMPER_BACKLEFT_TRIS        PORTZ06_TRIS
+
 
 #define MAXCOUNT 4
 #define SHIFTCOUNT 1
@@ -46,10 +49,11 @@
  ******************************************************************************/
 
 
-enum bumperIndex {BUMPER_RIGHT_I, BUMPER_LEFT_I, BUMPER_CENTER_I};
-static unsigned char bumperCounter[] = {0, 0, 0};
-static unsigned int bumperPort[] = {0, 0, 0};
-static char bumperState[] = { 0, 0, 0};
+enum bumperIndex {BUMPER_FRONTRIGHT_I, BUMPER_FRONTLEFT_I, BUMPER_BACKRIGHT_I,
+    BUMPER_BACKLEFT_I };
+static unsigned char bumperCounter[] = {0, 0, 0, 0};
+static unsigned int bumperPort[] = {0, 0, 0, 0};
+static char bumperState[] = { 0, 0, 0, 0};
 static unsigned int timesCounted = 0;
 
 
@@ -90,32 +94,39 @@ static void DebugLED(unsigned int i) {
     #ifdef USE_LEDS
 
         switch (i) {
-            case BUMPER_LEFT_I:
+            case BUMPER_FRONTLEFT_I:
                 if (bumperState[i])
                     LED_OnBank(LED_BANK1, 0x8);
                 else
                     LED_OffBank(LED_BANK1, 0x8);
                 break;
-            case BUMPER_CENTER_I:
+            case BUMPER_FRONTRIGHT_I:
                 if (bumperState[i])
                     LED_OnBank(LED_BANK1, 0x4);
                 else
                     LED_OffBank(LED_BANK1, 0x4);
                 break;
-            case BUMPER_RIGHT_I:
+            case BUMPER_BACKLEFT_I:
                 if (bumperState[i])
                     LED_OnBank(LED_BANK1, 0x2);
                 else
                     LED_OffBank(LED_BANK1, 0x2);
+                break;
+            case BUMPER_BACKRIGHT_I:
+                if (bumperState[i])
+                    LED_OnBank(LED_BANK1, 0x1);
+                else
+                    LED_OffBank(LED_BANK1, 0x1);
                 break;
         } // switch
    #endif
 }
 
 static char ReadBumpers() {
-    bumperPort[BUMPER_RIGHT_I] = !BUMPER_RIGHT_BIT;
-    bumperPort[BUMPER_LEFT_I] = !BUMPER_LEFT_BIT;
-    bumperPort[BUMPER_CENTER_I] = !BUMPER_CENTER_BIT;
+    bumperPort[BUMPER_FRONTRIGHT_I] = !BUMPER_FRONTRIGHT_BIT;
+    bumperPort[BUMPER_FRONTLEFT_I] = !BUMPER_FRONTLEFT_BIT;
+    bumperPort[BUMPER_BACKRIGHT_I] = !BUMPER_BACKRIGHT_BIT;
+    bumperPort[BUMPER_BACKLEFT_I] = !BUMPER_BACKLEFT_BIT;
     return SUCCESS;
 }
 
@@ -125,12 +136,13 @@ static char ReadBumpers() {
 char Bumper_Init() {
     //dbprintf("\nInitializing the Bumper Sensor Module.");
 
-    InitTimer(TIMER_NUM, UPDATE_DELAY);
+    InitTimer(TIMER_BUMPER, UPDATE_DELAY);
 
     // Define inputs
-    BUMPER_RIGHT_TRIS = 1;
-    BUMPER_LEFT_TRIS = 1;
-    BUMPER_CENTER_TRIS = 1;
+    BUMPER_FRONTRIGHT_TRIS = 1;
+    BUMPER_FRONTLEFT_TRIS = 1;
+    BUMPER_BACKRIGHT_TRIS = 1;
+    BUMPER_BACKLEFT_TRIS = 1;
 
 #ifdef USE_LEDS
     LED_Init(LED_BANK1);
@@ -146,36 +158,48 @@ char Bumper_Init() {
 }
 
 char Bumper_Update() {
-    if (IsTimerExpired(TIMER_NUM)) {
+    if (IsTimerExpired(TIMER_BUMPER)) {
         UpdateBumperCounters();
-        InitTimer(TIMER_NUM, UPDATE_DELAY);
+        InitTimer(TIMER_BUMPER, UPDATE_DELAY);
     }
     return SUCCESS;
 }
 
-char Bumper_LeftTriggered() {
-    // return bumperPort[BUMPER_LEFT_I]; // bumperCounter[BUMPER_LEFT_I] > (MAXCOUNT / 2);
-    return bumperState[BUMPER_LEFT_I];
+char Bumper_FrontLeftTriggered() {
+    return bumperState[BUMPER_FRONTLEFT_I];
 }
 
-char Bumper_CenterTriggered() {
-    // return bumperPort[BUMPER_CENTER_I]; // bumperCounter[BUMPER_CENTER_I] > (MAXCOUNT / 2);
-    return bumperState[BUMPER_CENTER_I];
+char Bumper_FrontRightTriggered() {
+    return bumperState[BUMPER_FRONTRIGHT_I];
 }
 
-char Bumper_RightTriggered() {
-    // return bumperPort[BUMPER_RIGHT_I]; // bumperCounter[BUMPER_RIGHT_I] > (MAXCOUNT / 2);
-    return bumperState[BUMPER_RIGHT_I];
+char Bumper_BackRightTriggered() {
+    return bumperState[BUMPER_BACKRIGHT_I];
+}
+
+char Bumper_BackLeftTriggered() {
+    return bumperState[BUMPER_BACKLEFT_I];
 }
 
 char Bumper_AnyTriggered() {
-    return Bumper_LeftTriggered()
-        || Bumper_CenterTriggered()
-        || Bumper_RightTriggered();
+    return Bumper_FrontLeftTriggered()
+        || Bumper_FrontRightTriggered()
+        || Bumper_BackRightTriggered()
+        || Bumper_BackLeftTriggered();
+}
+
+char Bumper_AnyFrontTriggered() {
+    return Bumper_FrontLeftTriggered()
+        || Bumper_FrontRightTriggered();
+}
+
+char Bumper_AnyBackTriggered() {
+    return Bumper_BackRightTriggered()
+        || Bumper_BackLeftTriggered();
 }
 
 char Bumper_End() {
-    StopTimer(TIMER_NUM);
+    StopTimer(TIMER_BUMPER);
     return SUCCESS;
 }
 
@@ -206,14 +230,9 @@ int main(void) {
     while(1) {
         Bumper_Update();
 
-        printf("\nStates: LEFT=(%x), CENTER=(%x), RIGHT=(%x)",
-            Bumper_LeftTriggered(), Bumper_CenterTriggered(),
-            Bumper_RightTriggered());
-            /*
-        printf("\nCstates: LEFT=(%x), C=(%x), R=(%x)",
-            bumperCounter[BUMPER_LEFT_I] > (MAXCOUNT / 2),  bumperCounter[BUMPER_CENTER_I] > (MAXCOUNT / 2),
-            bumperCounter[BUMPER_RIGHT_I] > (MAXCOUNT / 2));
-             * */
+        printf("\nStates: Front-left=(%x), Front-right=(%x), Back-left=(%x), Back-right=(%x)",
+            Bumper_FrontLeftTriggered(), Bumper_FrontRightTriggered(),
+            Bumper_BackRightTriggered(), Bumper_BackLeftTriggered());
                
             while (!IsTransmitEmpty()); // bad, this is blocking code
     } // end of loop

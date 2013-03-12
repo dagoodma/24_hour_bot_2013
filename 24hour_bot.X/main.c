@@ -5,7 +5,7 @@
  * Created on February 21, 2012, 7:46 PM
  */
 
-//#define USE_MAIN
+#define USE_MAIN
 
 //#define DEBUG
 
@@ -31,21 +31,14 @@
 #include "AD.h"
 #include "Util.h"
 #include "LED.h"
+#include <stdint.h>
 //#include <stdio.h>
 
 
 /*******************************************************************************
  * #DEFINES                                                                    *
  ******************************************************************************/
-#define TIMER_START 6
-#define TIMER_MOVE 7
-#define TIMER_AVOID 8
-#define TIMER_FIND 9
-#define TIMER_FOLLOW 10
-#define TIMER_CALIBRATE 11
-#define TIMER_RETURN 12
-#define TIMER_CHARGE 13
-#define TIMER_OBSTACLE 14
+
 #define MASTER_TIMER 15
 
 #define MASTER_TIMEOUT 11000
@@ -83,7 +76,7 @@ static enum { avoidState_transition, avoidState_front, avoidState_back } avoidTa
 static enum { avoidEvent_none, avoidEvent_resolved, avoidEvent_backTape,
     avoidEvent_frontTape } avoidTapeEvent;
 
-
+uint32_t time = 0;
 
 /*******************************************************************************
  * FUNCTION  PROTOTYPES                                                        *
@@ -128,7 +121,7 @@ void checkSearchEvents() {
             if (!IR_RightTriggered())
                 searchEvent = searchEvent_rightLost;
             else if (IR_LeftTriggered() && IR_RightTriggered())
-                searchEvent = searchEvent_bothfound;
+                searchEvent = searchEvent_bothFound;
             break;
         default:
             break;
@@ -147,6 +140,9 @@ void doSearchSM() {
             else if (searchEvent == searchEvent_bothFound) {
                 Drive_Stop();
                 // Transitions out
+            }
+            else {
+                Drive_Turn(pivot,left,HALF_SPEED);
             }
             break;
         case searchState_leftIR:
@@ -183,7 +179,7 @@ void checkAttackEvents() {
         case attackState_charge:
             break;
         case attackState_reverse:
-            if (IsTimerExpired(TIMER_REVERSE))
+            if (IsTimerExpired(TIMER_ATTACK))
                 attackEvent = attackEvent_reverseDone;
             else if (Tape_AnyTriggered())
                 attackEvent = attackEvent_hitTape;
@@ -211,7 +207,7 @@ void doAttackSM() {
                 // Transition out
             }
             else if (attackEvent == attackEvent_hitObject) {
-                InitTimer(TIMER_REVERSE, ATTACK_REVERSE_DELAY);
+                InitTimer(TIMER_ATTACK, ATTACK_REVERSE_DELAY);
                 Drive_Reverse(HALF_SPEED);
             }
             break;
@@ -238,60 +234,59 @@ void doAttackSM() {
 // ----------------------------------------------------------------------------
 
 void checkAvoidTapeEvents() {
-    avoidEvent = avoidEvent_none;
+    avoidTapeEvent = avoidEvent_none;
 
-    switch (avoidState) {
+    switch (avoidTapeState) {
         case avoidState_transition:
             if (Tape_AnyFrontTriggered())
-                avoidEvent = avoidEvent_frontTape;
+                avoidTapeEvent = avoidEvent_frontTape;
             else if (Tape_AnyBackTriggered())
-                avoidEvent = avoidEvent_backTape;
+                avoidTapeEvent = avoidEvent_backTape;
             break;
         case avoidState_front:
             if (Tape_AnyBackTriggered())
-                avoidEvent = avoidEvent_backTape;
-            else if (IsTimerExpired(TIMER_TAPE))
-                avoidEvent = avoidEvent_resolved;
+                avoidTapeEvent = avoidEvent_backTape;
+            else if (IsTimerExpired(TIMER_TAPEAVOID))
+                avoidTapeEvent = avoidEvent_resolved;
             break;
         case avoidState_back:
             if (Tape_AnyFrontTriggered())
-                avoidEvent = avoidEvent_frontTape;
-            else if (IsTimerExpired(TIMER_TAPE))
-                avoidEvent = avoidEvent_resolved;
+                avoidTapeEvent = avoidEvent_frontTape;
+            else if (IsTimerExpired(TIMER_TAPEAVOID))
+                avoidTapeEvent = avoidEvent_resolved;
             break;
         default:
             break;
     }
-
 }
 
 void doAvoidTapeSM() {
     checkAvoidTapeEvents();
 
-    switch (avoidState) {
+    switch (avoidTapeState) {
         case avoidState_transition:
-            if (avoidEvent == avoidEvent_backTape)
-                avoidState = avoidState_back;
-            else if (avoidEvent == avoidEvent_frontTape)
-                avoidState = avoidState_front;
+            if (avoidTapeEvent == avoidEvent_backTape)
+                avoidTapeState = avoidState_back;
+            else if (avoidTapeEvent == avoidEvent_frontTape)
+                avoidTapeState = avoidState_front;
 
-            InitTimer(TAPE_TIMER, AVOID_ARC_DELAY);
+            InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
             break;
         case avoidState_front:
-            if (avoidEvent == avoidEvent_backTape) {
-                InitTimer(TAPE_TIMER, AVOID_ARC_DELAY);
-                avoidState = avoidState_back;
+            if (avoidTapeEvent == avoidEvent_backTape) {
+                InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
+                avoidTapeState = avoidState_back;
             }
-            else if (avoidEvent == avoidEvent_arcDone) {
+            else if (avoidTapeEvent == avoidEvent_resolved) {
                 // Transition out
             }
             break;
         case avoidState_back:
-            if (avoidEvent == avoidEvent_frontTape) {
-                InitTimer(TAPE_TIMER, AVOID_ARC_DELAY);
-                avoidState = avoidState_front;
+            if (avoidTapeEvent == avoidEvent_frontTape) {
+                InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
+                avoidTapeState = avoidState_front;
             }
-            else if (avoidEvent == avoidEvent_arcDone) {
+            else if (avoidTapeEvent == avoidEvent_resolved) {
                 // Transition out
             }
             break;
@@ -315,16 +310,18 @@ void startMasterSM() {
     INTEnableSystemMultiVectoredInt();
     time = GetTime();
 
-    //int adPins = TAPE_LEFT | TAPE_CENTER | TAPE_RIGHT | TAPE_BACK |
-    //     TAPE_ARMFRONT | TAPE_ARMLEFT | TAPE_ARMRIGHT | BAT_VOLTAGE | IR_PINS;
+    int adPins = TAPE_FRONTLEFT | TAPE_FRONTRIGHT | TAPE_BACKRIGHT
+        | TAPE_BACKLEFT | BAT_VOLTAGE | IR_PINS;
+    AD_Init(adPins);
 
-    //AD_Init(adPins);
     // Initialize modules
     IR_Init();
     Tape_Init();
     Drive_Init();
     Bumper_Init();
+#ifdef USE_BALLER
     Baller_Init();
+#endif
 
     startSearchSM();
 
@@ -334,17 +331,18 @@ void startMasterSM() {
 
 void startSearchSM() {
     searchState = searchState_rightIR;
-
-    //Baller_Start();
-    Drive_Turn(pivot,left,HALF_SPEED);
 }
 
 void startAttackSM() {
     attackState = attackState_transition;
+
+#ifdef USE_BALLER
+    Baller_Start();
+#endif
 }
 
 void startAvoidTapeSM() {
-    avoidState = avoidState_transition;
+    avoidTapeState = avoidState_transition;
 }
 
 /*
@@ -367,7 +365,7 @@ void doTopSM() {
             break;
         case avoidTape:
             doAvoidTapeSM();
-            if (avoidEvent == avoidEvent_resolved)
+            if (avoidTapeEvent == avoidEvent_resolved)
                 startSearchSM();
             break;
         default:
@@ -380,7 +378,7 @@ void doTopSM() {
  ******************************************************************************/
 
 int main(void) {
-
+    startMasterSM();
     // ------------------------------- Main Loop -------------------------------
     while (1) {
         // Handle updates and module state machines
@@ -396,7 +394,6 @@ int main(void) {
     Tape_End();
     Drive_Stop();
     Bumper_End();
-    Gate_End();
     IR_End();
 
     return 0;

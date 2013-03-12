@@ -6,20 +6,21 @@
  *
  */
 
-#include <p32xxxx.h>
+#include <xc.h>
 #include <plib.h>
 #include "serial.h"
 #include "PORTS.h"
 #include "AD.h"
 #include "LED.h"
 #include "TapeSensor.h"
+#include "timers.h"
 
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
 //#define TAPE_TEST
 //#define TAPE_PRINT
-//#define TAPE_TEST_ALL
+#define TAPE_TEST_ALL
 #define USE_LEDS
 
 //#define DEBUG_VERBOSE
@@ -29,7 +30,7 @@
     #define dbprintf(...)
 #endif
 
-#define TAPESENSORCOUNT 7
+#define TAPESENSORCOUNT 4
 #define TAPEPINCOUNT (TAPESENSORCOUNT * 2)
 
 #define TIMESTOREAD 2 // MUST BE EVEN #
@@ -38,7 +39,6 @@
 #define TIMESTOREAD2 3
 
 // Timer config
-#define TIMER_NUM 3
 #define READDELAY 7 // msec
 #define STARTDELAY 3 // msec
 
@@ -52,28 +52,13 @@
 #endif
 
 //--------------- Photodetectors --------------
-//************* MOVED TO TapeSensor.h ***************
-/* 
-#define TAPE_LEFT   AD_PORTV5
-#define TAPE_CENTER AD_PORTV6
-#define TAPE_RIGHT AD_PORTV7
-#define TAPE_BACK AD_PORTV8
-#define TAPE_ARMFRONT AD_PORTW3
-#define TAPE_ARMLEFT AD_PORTW4
-#define TAPE_ARMRIGHT AD_PORTW5
-*/
+// see TapeSensor.h
 
 //----------------- Emitters ------------------
-#define TAPE_LED_TRIS PORTZ07_TRIS
-#define TAPE_LED_LAT PORTZ07_LAT
-#define TAPE_LEDS1_TRIS PORTY08_TRIS
-#define TAPE_LEDS1_LAT PORTY08_LAT
-#define TAPE_LEDS2_TRIS PORTX08_TRIS
-#define TAPE_LEDS2_LAT PORTX08_LAT
-#define TAPE_LEDS3_TRIS PORTZ11_TRIS
-#define TAPE_LEDS3_LAT PORTZ11_LAT
-
-
+#define TAPE_FRONTLEDS_TRIS PORTZ07_TRIS
+#define TAPE_FRONTLEDS_LAT  PORTZ07_LAT
+#define TAPE_BACKLEDS_TRIS  PORTZ09_TRIS
+#define TAPE_BACKLEDS_LAT   PORTZ09_LAT
 
 /*******************************************************************************
  * PRIVATE VARIABLES                                                           *
@@ -86,19 +71,17 @@ static char ledsOn = 0;
 
 
 
-static unsigned int const sensorPortMap[] = { TAPE_LEFT, TAPE_CENTER,
-    TAPE_RIGHT, TAPE_BACK, TAPE_ARMFRONT, TAPE_ARMLEFT, TAPE_ARMRIGHT };
-
+static unsigned int const sensorPortMap[] = { TAPE_FRONTLEFT, TAPE_FRONTRIGHT,
+    TAPE_BACKRIGHT, TAPE_BACKLEFT };
 
 
 //static char sensorStates[TAPESENSORCOUNT];
 static unsigned int sensorOffReadings[TAPESENSORCOUNT];
 static unsigned int sensorOnReadings[TAPESENSORCOUNT];
-static unsigned int sensorHighs[] = { 0, 0, 0, 0, 0, 0, 0 };
+static unsigned int sensorHighs[] = { 0, 0, 0, 0 };
 static unsigned int sensorState[TAPESENSORCOUNT];
 static unsigned int sensorThreshold[] = {ONTAPE_THRESHOLD, ONTAPE_THRESHOLD,
-    ONTAPE_THRESHOLD, ONTAPE_THRESHOLD, ONTAPE_THRESHOLD, ONTAPE_THRESHOLD,
-    ONTAPE_THRESHOLD };
+    ONTAPE_THRESHOLD, ONTAPE_THRESHOLD };
 static unsigned int sensorReading[TAPESENSORCOUNT];
 
 static unsigned int onTapeThreshold = ONTAPE_THRESHOLD;
@@ -118,6 +101,12 @@ static void ClearReadings();
 static void UpdateReadings();
 void DebugLEDOn(unsigned int index);
 void DebugLEDOff(unsigned int index);
+static unsigned int FrontLeftReading();
+static unsigned int FrontRightReading();
+static unsigned int BackLeftReading();
+static unsigned int BackRightReading();
+
+// remove
 static unsigned int LeftReading();
 static unsigned int CenterReading();
 static unsigned int RightReading();
@@ -166,10 +155,8 @@ static char ReadTapeSensors() {
  * @date 2012.3.5 12:13 */
 static void ledsAllOn() {
     ledsOn = 1;
-    TAPE_LED_LAT = 1;
-    TAPE_LEDS1_LAT = 1;
-    TAPE_LEDS2_LAT = 1;
-    TAPE_LEDS3_LAT = 1;
+    TAPE_FRONTLEDS_LAT = 1;
+    TAPE_BACKLEDS_LAT = 1;
 }
 
 
@@ -179,10 +166,8 @@ static void ledsAllOn() {
  * @date 2012.3.5 12:13 */
 static void ledsAllOff() {
     ledsOn = 0;
-    TAPE_LED_LAT = 0;
-    TAPE_LEDS1_LAT = 0;
-    TAPE_LEDS2_LAT = 0;
-    TAPE_LEDS3_LAT = 0;
+    TAPE_FRONTLEDS_LAT = 0;
+    TAPE_BACKLEDS_LAT = 0;
 }
 
 /**
@@ -269,26 +254,17 @@ static void UpdateReadings() {
 void DebugLEDOn(unsigned int index) {
 
     switch (index) {
-        case TAPE_LEFT_I:
+        case TAPE_FRONTLEFT_I:
             LED_OnBank(LED_BANK3, 0x8);
             break;
-        case TAPE_CENTER_I:
+        case TAPE_FRONTRIGHT_I:
             LED_OnBank(LED_BANK3, 0x4);
             break;
-        case TAPE_RIGHT_I:
+        case TAPE_BACKRIGHT_I:
             LED_OnBank(LED_BANK3, 0x2);
             break;
-        case TAPE_BACK_I:
-            LED_OnBank(LED_BANK1, 0x4);
-            break;
-        case TAPE_ARMFRONT_I:
+        case TAPE_BACKLEFT_I:
             LED_OnBank(LED_BANK3, 0x1);
-            break;
-        case TAPE_ARMLEFT_I:
-            LED_OnBank(LED_BANK1, 0x2);
-            break;
-        case TAPE_ARMRIGHT_I:
-            LED_OnBank(LED_BANK1, 0x1);
             break;
     } // switch
 }
@@ -296,26 +272,17 @@ void DebugLEDOn(unsigned int index) {
 void DebugLEDOff(unsigned int index) {
 
     switch (index) {
-        case TAPE_LEFT_I:
+        case TAPE_FRONTLEFT_I:
             LED_OffBank(LED_BANK3, 0x8);
             break;
-        case TAPE_CENTER_I:
+        case TAPE_FRONTRIGHT_I:
             LED_OffBank(LED_BANK3, 0x4);
             break;
-        case TAPE_RIGHT_I:
+        case TAPE_BACKRIGHT_I:
             LED_OffBank(LED_BANK3, 0x2);
             break;
-        case TAPE_BACK_I:
-            LED_OffBank(LED_BANK1, 0x4);
-            break;
-        case TAPE_ARMFRONT_I:
+        case TAPE_BACKLEFT_I:
             LED_OffBank(LED_BANK3, 0x1);
-            break;
-        case TAPE_ARMLEFT_I:
-            LED_OffBank(LED_BANK1, 0x2);
-            break;
-        case TAPE_ARMRIGHT_I:
-            LED_OffBank(LED_BANK1, 0x1);
             break;
     } // switch
 }
@@ -332,12 +299,10 @@ char Tape_Init() {
     // Define inputs
 
     // Define outputs (LEDs)
-    TAPE_LED_TRIS = 0;
-    TAPE_LEDS1_TRIS = 0;
-    TAPE_LEDS2_TRIS = 0;
-    TAPE_LEDS3_TRIS = 0;
+    TAPE_FRONTLEDS_TRIS = 0;
+    TAPE_BACKLEDS_TRIS = 0;
 
-    InitTimer(TIMER_NUM, STARTDELAY);
+    InitTimer(TIMER_TAPE, STARTDELAY);
 #ifdef USE_LEDS
     LED_Init(LED_BANK3 |LED_BANK1);
     LED_OffBank(LED_BANK3, 0xF);
@@ -366,12 +331,12 @@ char Tape_HandleSM() {
         
         case off:
             //dbprintf("\noff!");
-            if (IsTimerExpired(TIMER_NUM)) {
+            if (IsTimerExpired(TIMER_TAPE)) {
                 if (timesRead < TIMESTOREAD) {
                     tapeState = read;
                 }
                 else {
-                    InitTimer(TIMER_NUM, STARTDELAY);
+                    InitTimer(TIMER_TAPE, STARTDELAY);
                     timesRead = 0;
                     tapeState = on;
                     UpdateReadings();
@@ -385,7 +350,7 @@ char Tape_HandleSM() {
             
             // Only delay if we will read another time
             if (timesRead < TIMESTOREAD)
-                InitTimer(TIMER_NUM, READDELAY);
+                InitTimer(TIMER_TAPE, READDELAY);
 
             if (!ledsOn) {
                 tapeState = off;
@@ -397,12 +362,12 @@ char Tape_HandleSM() {
             break;
         case on:
           //dbprintf("\non!");
-            if (IsTimerExpired(TIMER_NUM)) {
+            if (IsTimerExpired(TIMER_TAPE)) {
                 if (timesRead < TIMESTOREAD) {
                     tapeState = read;
                 }
                 else {
-                    InitTimer(TIMER_NUM, STARTDELAY);
+                    InitTimer(TIMER_TAPE, STARTDELAY);
                     timesRead = 0;
                     tapeState = off;
                     UpdateReadings();
@@ -486,54 +451,37 @@ static void UpdateThresholds(unsigned int newOnTapeThreshold, unsigned int newOf
 
 
 // ********************* Tape Sensor Accessors *************************
-char Tape_LeftTriggered() { return sensorState[TAPE_LEFT_I]; }
 
-char Tape_CenterTriggered() { return sensorState[TAPE_CENTER_I]; }
+char Tape_FrontLeftTriggered() { return sensorState[TAPE_FRONTLEFT_I]; }
 
-char Tape_RightTriggered() { return sensorState[TAPE_RIGHT_I]; }
+char Tape_FrontRightTriggered() { return sensorState[TAPE_FRONTRIGHT_I]; }
 
-char Tape_BackTriggered() { return sensorState[TAPE_BACK_I]; }
+char Tape_BackRightTriggered() { return sensorState[TAPE_BACKRIGHT_I]; }
 
-char Tape_ArmFrontTriggered() { return sensorState[TAPE_ARMFRONT_I]; }
-
-char Tape_ArmLeftTriggered() { return sensorState[TAPE_ARMLEFT_I]; }
-
-char Tape_ArmRightTriggered() { return sensorState[TAPE_ARMRIGHT_I]; }
+char Tape_BackLeftTriggered() { return sensorState[TAPE_BACKLEFT_I]; }
 
 char Tape_AnyTriggered() {
-    return Tape_ArmRightTriggered() || Tape_ArmLeftTriggered() ||
-        Tape_ArmFrontTriggered() || Tape_LeftTriggered() ||
-        Tape_CenterTriggered() || Tape_RightTriggered() ||
-        Tape_BackTriggered();
+    return  Tape_FrontLeftTriggered() || Tape_FrontRightTriggered()
+        || Tape_BackRightTriggered() || Tape_BackLeftTriggered();
 }
 
-char Tape_AnyRightTriggered() {
-    return Tape_RightTriggered() || Tape_ArmLeftTriggered() ||
-            Tape_ArmFrontTriggered() || Tape_ArmRightTriggered();
+char Tape_AnyBackTriggered() {
+    return Tape_BackRightTriggered() || Tape_BackLeftTriggered();
 }
 
 char Tape_AnyFrontTriggered() {
-    return Tape_AnyRightTriggered || Tape_CenterTriggered || Tape_LeftTriggered;
+    return Tape_FrontRightTriggered() || Tape_FrontLeftTriggered();
 }
 
-static unsigned int LeftReading() { return sensorReading[TAPE_LEFT_I]; }
-
-static unsigned int CenterReading() { return sensorReading[TAPE_CENTER_I]; }
-
-static unsigned int RightReading() { return sensorReading[TAPE_RIGHT_I]; }
-
-static unsigned int BackReading() { return sensorReading[TAPE_BACK_I]; }
-
-static unsigned int ArmFrontReading() { return sensorReading[TAPE_ARMFRONT_I]; }
-
-static unsigned int ArmLeftReading() { return sensorReading[TAPE_ARMLEFT_I]; }
-
-static unsigned int ArmRightReading() { return sensorReading[TAPE_ARMRIGHT_I]; }
-
+static unsigned int FrontRightReading() { return sensorReading[TAPE_FRONTRIGHT_I]; }
+static unsigned int FrontLeftReading() { return sensorReading[TAPE_FRONTLEFT_I]; }
+static unsigned int BackRightReading() { return sensorReading[TAPE_BACKRIGHT_I]; }
+static unsigned int BackLeftReading() { return sensorReading[TAPE_BACKLEFT_I]; }
 
 /*******************************************************************************
  * TEST HARNESS                                                                *
  ******************************************************************************/
+//#define TAPE_TEST
 #ifdef TAPE_TEST
 
 
@@ -543,8 +491,7 @@ static unsigned int ArmRightReading() { return sensorReading[TAPE_ARMRIGHT_I]; }
 int main(void) {
     TIMERS_Init();
     SERIAL_Init();
-    AD_Init(TAPE_LEFT | TAPE_CENTER | TAPE_RIGHT | TAPE_BACK |
-        TAPE_ARMFRONT | TAPE_ARMLEFT | TAPE_ARMRIGHT);
+    AD_Init(TAPE_FRONTLEFT | TAPE_FRONTRIGHT | TAPE_BACKLEFT | TAPE_BACKRIGHT );
 
     int i = 0;
 
@@ -564,7 +511,7 @@ int main(void) {
     DELAY();
 
     #ifndef TAPE_TEST_ALL
-    unsigned int index = TAPE_LEFT_I;
+    unsigned int index = TAPE_FRONTLEFT_I;
     char keyPressed;
     i = 0;
     #endif
@@ -573,36 +520,24 @@ int main(void) {
         Tape_HandleSM();
 
         #ifdef TAPE_TEST_ALL
-        printf("\n left TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_LeftTriggered(),
-            ReadADPin(sensorPortMap[TAPE_LEFT_I]),
-            sensorOffReadings[TAPE_LEFT_I],
-            sensorOnReadings[TAPE_LEFT_I], sensorReading[TAPE_LEFT_I]);
-        printf("\n center TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_CenterTriggered(),
-            ReadADPin(sensorPortMap[TAPE_CENTER_I]),
-            sensorOffReadings[TAPE_CENTER_I],
-            sensorOnReadings[TAPE_CENTER_I], sensorReading[TAPE_CENTER_I]);
-        printf("\n right TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_RightTriggered(),
-            ReadADPin(sensorPortMap[TAPE_RIGHT_I]),
-            sensorOffReadings[TAPE_RIGHT_I],
-            sensorOnReadings[TAPE_RIGHT_I], sensorReading[TAPE_RIGHT_I]);
-        printf("\n back TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_BackTriggered(),
-            ReadADPin(sensorPortMap[TAPE_BACK_I]),
-            sensorOffReadings[TAPE_BACK_I],
-            sensorOnReadings[TAPE_BACK_I], sensorReading[TAPE_BACK_I]);
-        printf("\n armleft TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_ArmLeftTriggered(),
-            ReadADPin(sensorPortMap[TAPE_ARMLEFT_I]),
-            sensorOffReadings[TAPE_ARMLEFT_I],
-            sensorOnReadings[TAPE_ARMLEFT_I], sensorReading[TAPE_ARMLEFT_I]);
-        printf("\n armright TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_ArmRightTriggered(),
-            ReadADPin(sensorPortMap[TAPE_ARMRIGHT_I]),
-            sensorOffReadings[TAPE_ARMRIGHT_I],
-            sensorOnReadings[TAPE_ARMRIGHT_I], sensorReading[TAPE_ARMRIGHT_I]);
-        printf("\n armfront TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_ArmFrontTriggered(),
-            ReadADPin(sensorPortMap[TAPE_ARMFRONT_I]),
-            sensorOffReadings[TAPE_ARMFRONT_I],
-            sensorOnReadings[TAPE_ARMFRONT_I], sensorReading[TAPE_ARMFRONT_I]);
+        printf("\n front-left TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_FrontLeftTriggered(),
+            ReadADPin(sensorPortMap[TAPE_FRONTLEFT_I]),
+            sensorOffReadings[TAPE_FRONTLEFT_I],
+            sensorOnReadings[TAPE_FRONTLEFT_I], sensorReading[TAPE_FRONTLEFT_I]);
+        printf("\n front-right TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_FrontRightTriggered(),
+            ReadADPin(sensorPortMap[TAPE_FRONTRIGHT_I]),
+            sensorOffReadings[TAPE_FRONTRIGHT_I],
+            sensorOnReadings[TAPE_FRONTRIGHT_I], sensorReading[TAPE_FRONTRIGHT_I]);
+        printf("\n back-left TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_BackLeftTriggered(),
+            ReadADPin(sensorPortMap[TAPE_BACKLEFT_I]),
+            sensorOffReadings[TAPE_BACKLEFT_I],
+            sensorOnReadings[TAPE_BACKLEFT_I], sensorReading[TAPE_BACKLEFT_I]);
+        printf("\n back-right TRIG=%x, ADC=%x, OFF=%x, ON=%x, READ=%x", Tape_BackRightTriggered(),
+            ReadADPin(sensorPortMap[TAPE_BACKRIGHT_I]),
+            sensorOffReadings[TAPE_BACKRIGHT_I],
+            sensorOnReadings[TAPE_BACKRIGHT_I], sensorReading[TAPE_BACKRIGHT_I]);
 
-#else
+        #else
         /*
         if (i >= 10000) {
             char trig = 0;
@@ -661,7 +596,7 @@ int main(void) {
 #endif
 
             /*
-            printf("\nStates: L=(%x), C=(%x), R=(%x), B=(%x), AF=(%x), AL=(%x), AR=(%x)",
+            printf("\nStates: FL=(%x), FR=(%x), BL=(%x), BR=(%x)",
                LeftReading(), CenterReading(),
                RightReading(), BackReading(),
                ArmFrontReading(), ArmLeftReading(),
