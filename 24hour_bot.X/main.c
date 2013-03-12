@@ -5,7 +5,8 @@
  * Created on February 21, 2012, 7:46 PM
  */
 
-#define USE_MAIN
+//#define USE_MAIN
+#define USE_TRACK_TEST
 
 //#define DEBUG
 
@@ -43,10 +44,11 @@
 
 #define MASTER_TIMEOUT 11000
 
+#define SEARCH_SPEED            MIN_SPEED
 
 // All delay times in (ms)
 #define START_TAPE_DELAY        2500
-#define ATTACK_REVERSE_DELAY    2000
+#define ATTACK_REVERSE_DELAY    1000
 #define AVOID_ARC_DELAY         2000
 
 
@@ -61,7 +63,7 @@ static enum { search, attack, avoidTape} topState;
 
 static enum { searchState_rightIR, searchState_leftIR } searchState;
 static enum { searchEvent_none, searchEvent_bothFound, searchEvent_rightFound,
-    searchEvent_rightLost } searchEvent;
+    searchEvent_leftLost, searchEvent_leftFound, searchEvent_rightLost } searchEvent;
 
 //-------- Attack state variables -----------
 
@@ -72,7 +74,8 @@ static enum { attackEvent_none, attackEvent_lostTarget, attackEvent_hitTape,
 
 //-------- AvoidTape state variables -----------
 
-static enum { avoidState_transition, avoidState_front, avoidState_back } avoidTapeState;
+static enum { avoidState_transition, avoidState_resolveFront,
+        avoidState_resolveBack } avoidTapeState;
 static enum { avoidEvent_none, avoidEvent_resolved, avoidEvent_backTape,
     avoidEvent_frontTape } avoidTapeEvent;
 
@@ -111,15 +114,16 @@ void checkSearchEvents() {
     searchEvent = searchEvent_none;
 
     switch(searchState) {
-        case searchState_rightIR:
-            if (!IR_LeftTriggered() && IR_RightTriggered())
-                searchEvent = searchEvent_rightFound;
+        case searchState_leftIR:
+            if (IR_LeftTriggered())
+                searchEvent = searchEvent_leftFound;
             else if (IR_LeftTriggered() && IR_RightTriggered())
                 searchEvent = searchEvent_bothFound;
             break;
-        case searchState_leftIR:
-            if (!IR_RightTriggered())
-                searchEvent = searchEvent_rightLost;
+        case searchState_rightIR:
+            // TODO add tagert moves right exception
+            if (!IR_LeftTriggered())
+                searchEvent = searchEvent_leftLost;
             else if (IR_LeftTriggered() && IR_RightTriggered())
                 searchEvent = searchEvent_bothFound;
             break;
@@ -132,23 +136,23 @@ void doSearchSM() {
     checkSearchEvents();
 
     switch (searchState) {
-        case searchState_rightIR:
-            if (searchEvent == searchEvent_rightFound) {
-                Drive_Turn(pivot,right,HALF_SPEED);
-                searchState = searchState_leftIR;
+        case searchState_leftIR:
+            if (searchEvent == searchEvent_leftFound) {
+                Drive_Turn(pivot,right,SEARCH_SPEED);
+                searchState = searchState_rightIR;
             }
             else if (searchEvent == searchEvent_bothFound) {
                 Drive_Stop();
                 // Transitions out
             }
             else {
-                Drive_Turn(pivot,left,HALF_SPEED);
+                Drive_Turn(pivot,left,SEARCH_SPEED);
             }
             break;
-        case searchState_leftIR:
+        case searchState_rightIR:
             if (searchEvent == searchEvent_rightLost) {
-                Drive_Turn(pivot,left,HALF_SPEED);
-                searchState = searchState_rightIR;
+                Drive_Turn(pivot,left,SEARCH_SPEED);
+                searchState = searchState_leftIR;
             }
             else if (searchEvent == searchEvent_bothFound) {
                 Drive_Stop();
@@ -179,10 +183,10 @@ void checkAttackEvents() {
         case attackState_charge:
             break;
         case attackState_reverse:
-            if (IsTimerExpired(TIMER_ATTACK))
-                attackEvent = attackEvent_reverseDone;
-            else if (Tape_AnyTriggered())
+            if (Tape_AnyTriggered())
                 attackEvent = attackEvent_hitTape;
+            else if (IsTimerExpired(TIMER_ATTACK))
+                attackEvent = attackEvent_reverseDone;
             break;
         default:
             break;
@@ -207,6 +211,7 @@ void doAttackSM() {
                 // Transition out
             }
             else if (attackEvent == attackEvent_hitObject) {
+                attackState = attackState_reverse;
                 InitTimer(TIMER_ATTACK, ATTACK_REVERSE_DELAY);
                 Drive_Reverse(HALF_SPEED);
             }
@@ -215,6 +220,7 @@ void doAttackSM() {
             attackState = attackState_transition;
             break;
         case attackState_reverse:
+            // TODO Add 5 times counter
             if (attackEvent == attackEvent_reverseDone) {
                 attackState = attackState_transition;
                 Drive_Stop();
@@ -232,7 +238,7 @@ void doAttackSM() {
 // ----------------------------------------------------------------------------
 // ----------------------------- AvoidTapeSM ----------------------------------
 // ----------------------------------------------------------------------------
-
+// TODO NOW remove this state machine
 void checkAvoidTapeEvents() {
     avoidTapeEvent = avoidEvent_none;
 
@@ -243,13 +249,13 @@ void checkAvoidTapeEvents() {
             else if (Tape_AnyBackTriggered())
                 avoidTapeEvent = avoidEvent_backTape;
             break;
-        case avoidState_front:
+        case avoidState_resolveFront:
             if (Tape_AnyBackTriggered())
                 avoidTapeEvent = avoidEvent_backTape;
             else if (IsTimerExpired(TIMER_TAPEAVOID))
                 avoidTapeEvent = avoidEvent_resolved;
             break;
-        case avoidState_back:
+        case avoidState_resolveBack:
             if (Tape_AnyFrontTriggered())
                 avoidTapeEvent = avoidEvent_frontTape;
             else if (IsTimerExpired(TIMER_TAPEAVOID))
@@ -262,32 +268,41 @@ void checkAvoidTapeEvents() {
 
 void doAvoidTapeSM() {
     checkAvoidTapeEvents();
-
+    // TODO consider hit tape, stop and find them,
+    //  since they're assumed to be in bounds
     switch (avoidTapeState) {
         case avoidState_transition:
             if (avoidTapeEvent == avoidEvent_backTape)
-                avoidTapeState = avoidState_back;
+                avoidTapeState = avoidState_resolveBack;
             else if (avoidTapeEvent == avoidEvent_frontTape)
-                avoidTapeState = avoidState_front;
+                avoidTapeState = avoidState_resolveFront;
 
             InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
             break;
-        case avoidState_front:
-            if (avoidTapeEvent == avoidEvent_backTape) {
-                InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
-                avoidTapeState = avoidState_back;
-            }
-            else if (avoidTapeEvent == avoidEvent_resolved) {
-                // Transition out
-            }
-            break;
-        case avoidState_back:
+        case avoidState_resolveBack:
             if (avoidTapeEvent == avoidEvent_frontTape) {
                 InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
-                avoidTapeState = avoidState_front;
+                avoidTapeState = avoidState_resolveFront;
             }
             else if (avoidTapeEvent == avoidEvent_resolved) {
+                Drive_Stop();
                 // Transition out
+            }
+            else {
+                Drive_Forward(MIN_SPEED);
+            }
+            break;
+        case avoidState_resolveFront:
+            if (avoidTapeEvent == avoidEvent_backTape) {
+                InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
+                avoidTapeState = avoidState_resolveBack;
+            }
+            else if (avoidTapeEvent == avoidEvent_resolved) {
+                Drive_Stop();
+                // Transition out
+            }
+            else {
+                Drive_Reverse(MIN_SPEED);
             }
             break;
         default:
@@ -380,6 +395,7 @@ void doTopSM() {
  * ENTRY POINT                                                                 *
  ******************************************************************************/
 
+#ifndef USE_TRACK_TEST
 int main(void) {
     startMasterSM();
     // ------------------------------- Main Loop -------------------------------
@@ -401,6 +417,27 @@ int main(void) {
 
     return 0;
 } // end of main()
+
+#else
+// Tracking test harness
+int main(void) {
+    startMasterSM();
+    // ------------------------------- Main Loop -------------------------------
+    while (1) {
+        // Handle updates and module state machines
+        Tape_HandleSM();
+        Drive_Update();
+        Bumper_Update();
+        IR_Update();
+
+        //doTopSM();
+        doSearchSM();
+        if (searchEvent == searchEvent_bothFound)
+            startSearchSM();
+    }
+}
+
+#endif
 
 // ---------------------- EOF ----------------------
 #endif

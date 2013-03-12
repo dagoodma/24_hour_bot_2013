@@ -4,7 +4,7 @@
  *
  * Created on March 2, 2012
  */
-#define DRIVE_TEST
+//#define DRIVE_TEST
 
 #include <xc.h>
 #include "serial.h"
