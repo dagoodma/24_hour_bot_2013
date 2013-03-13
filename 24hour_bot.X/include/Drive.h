@@ -57,18 +57,6 @@ char Drive_Init(void);
  * @date  */
 char Drive_Update(void);
 
-
-/**
- * @Function: Drive_Turn()
- * @param Type of turn to be made {pivot, rightAng, soft, hard}
- * @param Direction to make the turn {right, left, same, opposite}
- * @param Speed of turn 0(slowest) to 10(fastest)
- * @return SUCCESS or ERROR
- * @remark Changes speed of motors to make a turn
- * @date  */
-char Drive_Turn(unsigned int turnType, unsigned int turnDir, unsigned int speed);
-
-
 /**
  * @Function: Drive_Forward()
  * @param speed of driving forward 0(slowest) 10(fastest)
