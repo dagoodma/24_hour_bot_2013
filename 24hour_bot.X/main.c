@@ -6,33 +6,22 @@
  */
 
 #define USE_MAIN
-//#define USE_TRACK_TEST
+#define USE_TRACK_TEST
 
 //#define DEBUG
 
-
-//#define DEBUG_STATES // slows and blinks LEDs
-//#define DISABLE_AVOID
-//#define DEBUG_VERBOSE
-
-//#define TAPE_CALIBRATE 1
-
-//#define TARGET_USETIME
-
-
 #ifdef USE_MAIN
 #include <xc.h>
+#include <stdint.h>
 #include "serial.h"
 #include "PORTS.h"
 #include "timers.h"
 #include "Drive.h"
-#include "TapeSensor.h"
 #include "IR.h"
 #include "Bumper.h"
 #include "AD.h"
 #include "Util.h"
 #include "LED.h"
-#include <stdint.h>
 #include "pwm.h"
 #include "Shooter.h"
 //#include <stdio.h>
@@ -42,19 +31,17 @@
  * #DEFINES                                                                    *
  ******************************************************************************/
 
-#define SEARCH_SPEED            2//LOWEST_SPEED
-#define FAST_SEARCH_SPEED       5//100 //MIN_SPEED
+#define SLOW_SEARCH_SPEED       LOW_SPEED
+#define FAST_SEARCH_SPEED       HALF_SPEED
 
 // All delay times in (ms)
-#define START_TAPE_DELAY        2500
 #define ATTACK_REVERSE_DELAY    1000
 #define AVOID_ARC_DELAY         2000
 
 
-
 #define DEBUG_VERBOSE
 #ifdef DEBUG_VERBOSE
-    #define dbprintf(...) printf(__VA_ARGS__)
+    #define dbprintf(...)   do { printf(__VA_ARGS__); wait(); } while(0)
 #else
     #define dbprintf(...)
 #endif
@@ -68,28 +55,19 @@
  ******************************************************************************/
 
 //---------- Top state variables ------------
-static enum { search, attack, avoidTape} topState;
+static enum { search, attack } topState;
 
 //-------- Search state variables -----------
 
 static enum { searchState_rightIR, searchState_leftIR, searchState_fastSearch } searchState;
 static enum { searchEvent_none, searchEvent_bothFound, searchEvent_rightFound,
-    searchEvent_leftLost, searchEvent_leftFound, searchEvent_rightLost,
-    searchEvent_anyFound, searchEvent_bothLost } searchEvent;
+    searchEvent_leftFound, searchEvent_anyFound, searchEvent_bothLost } searchEvent;
 
 //-------- Attack state variables -----------
 
-static enum { attackState_transition, attackState_charge, attackState_reverse } attackState;
-static enum { attackEvent_none, attackEvent_lostTarget, attackEvent_hitTape,
-    attackEvent_hitObject, attackEvent_reverseDone} attackEvent;
-
-
-//-------- AvoidTape state variables -----------
-
-static enum { avoidState_transition, avoidState_resolveFront,
-        avoidState_resolveBack } avoidTapeState;
-static enum { avoidEvent_none, avoidEvent_resolved, avoidEvent_backTape,
-    avoidEvent_frontTape } avoidTapeEvent;
+static enum { attackState_transition, attackState_shoot, attackState_charge, attackState_reverse } attackState;
+static enum { attackEvent_none, attackEvent_lostTarget, attackEvent_hitObject,
+    attackEvent_reverseDone} attackEvent;
 
 uint32_t time = 0;
 
@@ -100,15 +78,12 @@ void doTopSM();
 
 void doSearchSM();
 void doAttackSM();
-void doAvoidTapeSM();
 
 void checkSearchEvents();
 void checkAttackEvents();
-void checkAvoidTapeEvents();
 
 void startSearchSM();
 void startAttackSM();
-void startAvoidTapeSM();
 
 
 void startMasterSM();
@@ -122,6 +97,7 @@ void doMasterSM();
 // ----------------------------------------------------------------------------
 // ------------------------------- SearchSM -----------------------------------
 // ----------------------------------------------------------------------------
+#ifndef USE_SIMPLE_SEARCH
 void checkSearchEvents() {
     searchEvent = searchEvent_none;
 
@@ -131,19 +107,19 @@ void checkSearchEvents() {
                 searchEvent = searchEvent_anyFound;
             break;
         case searchState_leftIR:
-            if (IR_LeftTriggered())
-                searchEvent = searchEvent_leftFound;
-            else if (IR_LeftTriggered() && IR_RightTriggered())
+            if (IR_LeftTriggered() && IR_RightTriggered())
                 searchEvent = searchEvent_bothFound;
+            else if (IR_LeftTriggered())
+                searchEvent = searchEvent_leftFound;
             else if (!IR_LeftTriggered() && !IR_RightTriggered())
                 searchEvent = searchEvent_bothLost;
             break;
         case searchState_rightIR:
             // TODO add tagert moves right exception
-            if (!IR_LeftTriggered())
-                searchEvent = searchEvent_leftLost;
-            else if (IR_LeftTriggered() && IR_RightTriggered())
+            if (IR_LeftTriggered() && IR_RightTriggered())
                 searchEvent = searchEvent_bothFound;
+            if (IR_RightTriggered())
+                searchEvent = searchEvent_rightFound;
             else if (!IR_LeftTriggered() && !IR_RightTriggered())
                 searchEvent = searchEvent_bothLost;
             break;
@@ -158,9 +134,11 @@ void doSearchSM() {
     switch (searchState) {
         // search fast right
         case searchState_fastSearch:
+            // turn right quickly
             if (searchEvent == searchEvent_anyFound) {
-                searchState = searchState_rightIR;
-                Drive_Pivot(left,SEARCH_SPEED);
+                dbprintf("Search: Fast search found IR (%x)\n",searchState);
+                searchState = searchState_leftIR;
+                Drive_Pivot(left,SLOW_SEARCH_SPEED);
             }
             else {
                 Drive_Pivot(right, FAST_SEARCH_SPEED);
@@ -168,38 +146,95 @@ void doSearchSM() {
             break;
 
         case searchState_leftIR:
+            // turn left slowly till left sensor hits
             if (searchEvent == searchEvent_leftFound) {
-                Drive_Pivot(right,SEARCH_SPEED);
+                dbprintf("Search: Left IR triggered (%x)\n",searchState);
+                Drive_Pivot(right,SLOW_SEARCH_SPEED);
                 searchState = searchState_rightIR;
             }
             else if (searchEvent == searchEvent_bothFound) {
+                dbprintf("Search: Triggered both IR (%x)\n",searchState);
                 Drive_Stop();
                 // Transitions out
             }
             else if (searchEvent == searchEvent_bothLost) {
+                dbprintf("Search: Both IR lost (%x)\n",searchState);
                 searchState = searchState_fastSearch;
-                Drive_Pivot(right, FAST_SEARCH_SPEED);
             }
             break;
         case searchState_rightIR:
-            if (searchEvent == searchEvent_leftLost) {
-                Drive_Pivot(left,SEARCH_SPEED);
+            if (searchEvent == searchEvent_rightFound) {
+                dbprintf("Search: Right IR triggered (%x)\n",searchState);
+                Drive_Pivot(left,SLOW_SEARCH_SPEED);
                 searchState = searchState_leftIR;
             }
             else if (searchEvent == searchEvent_bothFound) {
+                dbprintf("Search: Triggered both IR (%x)\n",searchState);
                 Drive_Stop();
                 // Transitions out
             }
             else if (searchEvent == searchEvent_bothLost) {
-                searchState = searchState_fastSearch;
-                Drive_Pivot(right, FAST_SEARCH_SPEED);
+                dbprintf("Search: Both IR lost (%x)\n",searchState);
             }
             break;
         default:
             break;
     }
 }
+#else
+void checkSearchEvents() {
+    searchEvent = searchEvent_none;
 
+    switch(searchState) {
+        case searchState_leftIR:
+            if (IR_LeftTriggered() && IR_RightTriggered())
+                searchEvent = searchEvent_bothFound;
+            else if (IR_LeftTriggered())
+                searchEvent = searchEvent_leftFound;
+            break;
+        case searchState_rightIR:
+            if (!IR_LeftTriggered())
+                searchEvent = searchEvent_leftLost;
+            else if (IR_LeftTriggered() && IR_RightTriggered())
+                searchEvent = searchEvent_bothFound;
+            break;
+        default:
+            break;
+    }
+}
+
+void doSearchSM() {
+    checkSearchEvents();
+
+    switch (searchState) {
+        case searchState_leftIR:
+            if (searchEvent == searchEvent_leftFound) {
+                Drive_Turn(pivot,right,SEARCH_SPEED);
+                searchState = searchState_rightIR;
+            }
+            else if (searchEvent == searchEvent_bothFound) {
+                Drive_Stop();
+                // Transitions out
+            }
+            else {
+                Drive_Turn(pivot,left,SEARCH_SPEED);
+            }
+            break;
+        case searchState_rightIR:
+            if (searchEvent == searchEvent_lefttLost) {
+                Drive_Turn(pivot,left,SEARCH_SPEED);
+                searchState = searchState_leftIR;
+            }
+            else if (searchEvent == searchEvent_bothFound) {
+                Drive_Stop();
+                // Transitions out
+            }
+            break;
+        default:
+            break;
+    }
+}
+#endif
 // ----------------------------------------------------------------------------
 // ------------------------------- AttackSM -----------------------------------
 // ----------------------------------------------------------------------------
@@ -211,17 +246,13 @@ void checkAttackEvents() {
         case attackState_transition:
             if (!IR_RightTriggered() || !IR_LeftTriggered())
                 attackEvent = attackEvent_lostTarget;
-            else if (Tape_AnyTriggered())
-                attackEvent = attackEvent_hitTape;
             else if (Bumper_AnyFrontTriggered())
                 attackEvent = attackEvent_hitObject;
             break;
         case attackState_charge:
             break;
         case attackState_reverse:
-            if (Tape_AnyTriggered())
-                attackEvent = attackEvent_hitTape;
-            else if (IsTimerExpired(TIMER_ATTACK))
+            if (IsTimerExpired(TIMER_ATTACK))
                 attackEvent = attackEvent_reverseDone;
             break;
         default:
@@ -235,14 +266,16 @@ void doAttackSM() {
     switch (attackState) {
         case attackState_transition:
             if (attackEvent == attackEvent_none) {
-                attackState = attackState_charge;
-                Drive_Forward(HALF_SPEED);
+                if (Shooter_hasAmmo()) {
+                    attackState = attackState_shoot;
+                    Shooter_startShooting();
+                }
+                else {
+                    attackState = attackState_charge;
+                    Drive_Forward(HALF_SPEED);
+                }
             }
             else if (attackEvent == attackEvent_lostTarget) {
-                Drive_Stop();
-                // Transition out
-            }
-            else if (attackEvent == attackEvent_hitTape) {
                 Drive_Stop();
                 // Transition out
             }
@@ -252,101 +285,24 @@ void doAttackSM() {
                 Drive_Reverse(LOW_SPEED);
             }
             break;
+        case attackState_shoot:
+            attackState = attackState_transition;
+            break;
         case attackState_charge:
             attackState = attackState_transition;
             break;
         case attackState_reverse:
+            // reverses after rammng
             // TODO Add 5 times counter
             if (attackEvent == attackEvent_reverseDone) {
                 attackState = attackState_transition;
                 Drive_Stop();
             }
-            else if (attackEvent == attackEvent_hitTape) {
-                Drive_Stop();
-                // Transition out
-            }
             break;
         default:
             break;
     }
 }
-
-// ----------------------------------------------------------------------------
-// ----------------------------- AvoidTapeSM ----------------------------------
-// ----------------------------------------------------------------------------
-// TODO NOW remove this state machine
-void checkAvoidTapeEvents() {
-    avoidTapeEvent = avoidEvent_none;
-
-    switch (avoidTapeState) {
-        case avoidState_transition:
-            if (Tape_AnyFrontTriggered())
-                avoidTapeEvent = avoidEvent_frontTape;
-            else if (Tape_AnyBackTriggered())
-                avoidTapeEvent = avoidEvent_backTape;
-            break;
-        case avoidState_resolveFront:
-            if (Tape_AnyBackTriggered())
-                avoidTapeEvent = avoidEvent_backTape;
-            else if (IsTimerExpired(TIMER_TAPEAVOID))
-                avoidTapeEvent = avoidEvent_resolved;
-            break;
-        case avoidState_resolveBack:
-            if (Tape_AnyFrontTriggered())
-                avoidTapeEvent = avoidEvent_frontTape;
-            else if (IsTimerExpired(TIMER_TAPEAVOID))
-                avoidTapeEvent = avoidEvent_resolved;
-            break;
-        default:
-            break;
-    }
-}
-
-void doAvoidTapeSM() {
-    checkAvoidTapeEvents();
-    // TODO consider hit tape, stop and find them,
-    //  since they're assumed to be in bounds
-    switch (avoidTapeState) {
-        case avoidState_transition:
-            if (avoidTapeEvent == avoidEvent_backTape)
-                avoidTapeState = avoidState_resolveBack;
-            else if (avoidTapeEvent == avoidEvent_frontTape)
-                avoidTapeState = avoidState_resolveFront;
-
-            InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
-            break;
-        case avoidState_resolveBack:
-            if (avoidTapeEvent == avoidEvent_frontTape) {
-                InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
-                avoidTapeState = avoidState_resolveFront;
-            }
-            else if (avoidTapeEvent == avoidEvent_resolved) {
-                Drive_Stop();
-                // Transition out
-            }
-            else {
-                Drive_Forward(MIN_SPEED);
-            }
-            break;
-        case avoidState_resolveFront:
-            if (avoidTapeEvent == avoidEvent_backTape) {
-                InitTimer(TIMER_TAPEAVOID, AVOID_ARC_DELAY);
-                avoidTapeState = avoidState_resolveBack;
-            }
-            else if (avoidTapeEvent == avoidEvent_resolved) {
-                Drive_Stop();
-                // Transition out
-            }
-            else {
-                Drive_Reverse(MIN_SPEED);
-            }
-            break;
-        default:
-            break;
-    }
-
-}
-
 
 
 // ----------------------- Main state machine handler -----------------
@@ -361,11 +317,10 @@ void startMasterSM() {
     INTEnableSystemMultiVectoredInt();
     time = GetTime();
 
-    int adPins = TAPE_FRONTLEFT | TAPE_FRONTRIGHT | TAPE_BACKRIGHT
-        | TAPE_BACKLEFT | BAT_VOLTAGE | IR_PINS;
+    int adPins = BAT_VOLTAGE | IR_PINS;
     AD_Init(adPins);
 
-    int pwmPins = MOTOR_A_PWM |  MOTOR_B_PWM; //| DC_MOTOR_PWM;
+    int pwmPins = MOTOR_A_PWM |  MOTOR_B_PWM | DC_MOTOR_PWM;
     PWM_Init(pwmPins, FREQUENCY_PWM);
 
     // Initialize modules
@@ -373,14 +328,9 @@ void startMasterSM() {
     //Tape_Init();
     Drive_Init();
     //Bumper_Init();
-#ifdef USE_BALLER
-    Baller_Init();
-#endif
     Shooter_Init();
 
     startSearchSM();
-
-    InitTimer(TIMER_START, START_TAPE_DELAY);
 }
 
 
@@ -394,17 +344,7 @@ void startAttackSM() {
     topState = attack;
     attackState = attackState_transition;
     Drive_Stop();
-    wait();
-#ifdef USE_BALLER
-    Baller_Start();
-#endif
     dbprintf("Started in state: attack\n");
-}
-
-void startAvoidTapeSM() {
-    topState = avoidTape;
-    avoidTapeState = avoidState_transition;
-    dbprintf("Started in state: avoidTape\n");
 }
 
 /*
@@ -422,14 +362,6 @@ void doTopSM() {
             doAttackSM();
             if (attackEvent == attackEvent_lostTarget)
                 startSearchSM();
-            if (attackEvent == attackEvent_hitTape)
-                startSearchSM();
-                //startAvoidTapeSM();
-            break;
-        case avoidTape:
-            doAvoidTapeSM();
-            if (avoidTapeEvent == avoidEvent_resolved)
-                startSearchSM();
             break;
         default:
             break;
@@ -446,16 +378,15 @@ int main(void) {
     // ------------------------------- Main Loop -------------------------------
     while (1) {
         // Handle updates and module state machines
-        //Tape_HandleSM();
         Drive_Update();
         //Bumper_Update();
         IR_Update();
+        Shooter_doSM();
         
         doTopSM();
     }
 
     exit:
-    //Tape_End();
     Drive_Stop();
     //Bumper_End();
     IR_End();
@@ -471,17 +402,14 @@ int main(void) {
     // ------------------------------- Main Loop -------------------------------
     while (1) {
         // Handle updates and module state machines
-        //Tape_HandleSM();
         Drive_Update();
         //Bumper_Update();
         IR_Update();
         Shooter_doSM();
 
-        //doTopSM();
         doSearchSM();
         if (searchEvent == searchEvent_bothFound)
-            return SUCCESS;
-            //startSearchSM();
+            Drive_Stop();
     }
 }
 

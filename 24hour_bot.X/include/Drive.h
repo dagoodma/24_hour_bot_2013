@@ -30,11 +30,10 @@
 #define MOTOR_B_PWM         PWM_PORTY12
 #define MOTOR_A_PWM         PWM_PORTY10
 
-#define HALF_SPEED      5
-#define FULL_SPEED      10
-#define LOW_SPEED       3
-#define MIN_SPEED       1
-#define LOWEST_SPEED    2
+#define HALF_SPEED      430
+#define FULL_SPEED      1000
+#define LOW_SPEED       400
+#define MIN_SPEED       300
 
 enum turnType{pivot, rightAng, soft, hard};
 enum turnDir{right, left, same, opposite};

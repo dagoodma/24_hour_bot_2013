@@ -114,7 +114,7 @@ void Shooter_doSM() {
 }
 
 void Shooter_startShooting() {
-    if (Shooter_hasAmmo()) {
+    if (Shooter_hasAmmo() && !Shooter_isShooting()) {
         state = shootWait;
         InitTimer(TIMER_SHOOT,WAIT_DELAY);
 
@@ -131,6 +131,10 @@ void Shooter_stopShooting() {
 
 char Shooter_hasAmmo() {
     return ammoCount > 0;
+}
+
+char Shooter_isShooting() {
+    return state != idle;
 }
 
 

@@ -21,6 +21,8 @@ void Shooter_stopShooting();
 
 char Shooter_hasAmmo();
 
+char Shooter_isShooting();
+
 
 #endif	/* SHOOTER_H */
 

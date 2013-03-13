@@ -61,10 +61,10 @@ static void SetDirection(int motor, int direction);
 static void SetDirection(int motor, int direction) {
 
     //if (motor == A) {
-        MOTOR_A_DIR = !direction;
+        MOTOR_A_DIR = direction;
     //}
     //else {
-        MOTOR_B_DIR = !direction;
+        MOTOR_B_DIR = direction;
     //}
 }
 
@@ -90,6 +90,10 @@ static char SetSpeed(int motor, unsigned int speed) {
     pwm = min(pwm, 1000);
     pwm = max(pwm, 0);
 */
+    unsigned int pwm = speed;
+    motorPWMValue[motor] = pwm;
+    pwm = min(pwm, 1000);
+    pwm = max(pwm, 0);
     SetDutyCycle(motorPWM[motor], speed);
 }
 
@@ -128,12 +132,12 @@ char Drive_Update(void) {
 Drive_Pivot(enum turnDir dir, unsigned int speed) {
     switch (dir) {
         case right:
-            SetMotor(B, FORWARD, 0);
-            SetMotor(A, FORWARD, speed);
+            SetMotor(A, FORWARD, 0);
+            SetMotor(B, FORWARD, speed);
             break;
         case left:
-            SetMotor(B, FORWARD, speed);
-            SetMotor(A, FORWARD, 0);
+            SetMotor(A, FORWARD, speed);
+            SetMotor(B, FORWARD, 0);
             break;
         default:
             break;
