@@ -10,6 +10,9 @@
 #ifndef Drive_H
 #define Drive_H
 
+#include "ports.h"
+#include "pwm.h"
+
 /*******************************************************************************
  * PUBLIC #DEFINES                                                             *
  ******************************************************************************/
@@ -24,10 +27,14 @@
 #define TRUE 1
 #endif
 
-#define HALF_SPEED 5
-#define FULL_SPEED 10
-#define MID_SPEED 7
-#define MIN_SPEED 3
+#define MOTOR_B_PWM         PWM_PORTY12
+#define MOTOR_A_PWM         PWM_PORTY10
+
+#define HALF_SPEED      5
+#define FULL_SPEED      10
+#define LOW_SPEED       3
+#define MIN_SPEED       1
+#define LOWEST_SPEED    2
 
 enum turnType{pivot, rightAng, soft, hard};
 enum turnDir{right, left, same, opposite};
@@ -60,7 +67,7 @@ char Drive_Update(void);
  * @return SUCCESS or ERROR
  * @remark Changes speed of motors to make a turn
  * @date  */
-char Drive_Turn(unsigned int turnType, unsigned int turnDir, char speed);
+char Drive_Turn(unsigned int turnType, unsigned int turnDir, unsigned int speed);
 
 
 /**
@@ -69,7 +76,7 @@ char Drive_Turn(unsigned int turnType, unsigned int turnDir, char speed);
  * @return SUCCESS or ERROR
  * @remark Drives the motors straight and forward
  * @date  */
-char Drive_Forward(char speed);
+char Drive_Forward(unsigned int speed);
 
 /**
  * @Function: Drive_Reverse()
@@ -77,7 +84,7 @@ char Drive_Forward(char speed);
  * @return TRUE or FALSE value
  * @remark Drives the motors straight and reverse
  * @date */
-char Drive_Reverse(char speed);
+char Drive_Reverse(unsigned int speed);
 
 /**
  * @Function: Drive_Stop()

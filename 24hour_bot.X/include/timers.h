@@ -26,9 +26,11 @@
 #define TIMER_BUMPER            2
 #define TIMER_TAPE              3
 #define TIMER_IR                4
+#define TIMER_DRIVE             5
 #define TIMER_START             6
 #define TIMER_ATTACK            7
 #define TIMER_TAPEAVOID         8
+#define TIMER_SHOOT             9
 
 
 /*******************************************************************************

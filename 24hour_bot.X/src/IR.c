@@ -17,7 +17,7 @@
 #include "LED.h"
 
 
-//#define USE_LEDS
+#define USE_LEDS
 //#define USE_SAMPLING
 //#define IR_TEST
 
@@ -34,12 +34,19 @@
 #define IR_LEFT AD_PORTW6
 #define IR_RIGHT AD_PORTW7
 
-#define LEFT_HIGH_THRESHOLD     980
-#define LEFT_LOW_THRESHOLD      850
-#define RIGHT_HIGH_THRESHOLD    1000
-#define RIGHT_LOW_THRESHOLD     870
+/*
+#define LEFT_HIGH_THRESHOLD     835
+#define LEFT_LOW_THRESHOLD      635
+#define RIGHT_HIGH_THRESHOLD    815
+#define RIGHT_LOW_THRESHOLD     715
+ */
+#define LEFT_HIGH_THRESHOLD     795
+#define LEFT_LOW_THRESHOLD      635
+#define RIGHT_HIGH_THRESHOLD    778
+#define RIGHT_LOW_THRESHOLD     715
+ 
 
-#define MAXCOUNT 4
+#define MAXCOUNT 1
 
 
 /*******************************************************************************
@@ -82,13 +89,6 @@ void UpdateCounters() {
         result = irCounter[IR_LEFT_I] >= MAXCOUNT;
         irState[IR_LEFT_I] = result;
 
-        #ifdef USE_LEDS
-        if (result)
-            LED_OnBank(LED_BANK3, 0x1);
-        else
-            LED_OffBank(LED_BANK3, 0x1);
-        #endif
-
         if (result)
             irThreshold[IR_LEFT_I] = LEFT_LOW_THRESHOLD;
         else
@@ -96,13 +96,6 @@ void UpdateCounters() {
 
         result = irCounter[IR_RIGHT_I] >= MAXCOUNT;
         irState[IR_RIGHT_I] = result;
-
-        #ifdef USE_LEDS
-        if (result)
-            LED_OnBank(LED_BANK3, 0x8);
-        else
-            LED_OffBank(LED_BANK3, 0x8);
-        #endif
 
         if (result)
             irThreshold[IR_RIGHT_I] = RIGHT_LOW_THRESHOLD;
@@ -123,39 +116,56 @@ void UpdateCounters() {
  * @date 2012.3.5 12:47 */
 char IsRightTriggered() {
     unsigned int val = ReadADPin(IR_RIGHT);
+    char result = OFF;
     //dbprintf("\nAngle=%d", val);
     if (val > irThreshold[IR_RIGHT_I]) {
 #ifndef USE_SAMPLING
         irThreshold[IR_RIGHT_I] = RIGHT_LOW_THRESHOLD;
 #endif
-        return ON;
+        result = ON;
     }
     if (val < irThreshold[IR_RIGHT_I]) {
         #ifndef USE_SAMPLING
         irThreshold[IR_RIGHT_I] = RIGHT_HIGH_THRESHOLD;
         #endif
-        return OFF;
+        result = OFF;
     }
-    return OFF;
+
+    #ifdef USE_LEDS
+    if (result)
+        LED_OnBank(LED_BANK1, 0x8);
+    else
+        LED_OffBank(LED_BANK1, 0x8);
+    #endif
+    return result;
 }
 
 
 char IsLeftTriggered() {
     unsigned int val = ReadADPin(IR_LEFT);
+    char result = OFF;
     //dbprintf("\nMain=%d", val);
     if (val > irThreshold[IR_LEFT_I]) {
         #ifndef USE_SAMPLING
         irThreshold[IR_LEFT_I] = LEFT_LOW_THRESHOLD;
 #endif
-        return ON;
+        result =  ON;
     }
     if (val < irThreshold[IR_LEFT_I]) {
         #ifndef USE_SAMPLING
         irThreshold[IR_LEFT_I] = LEFT_HIGH_THRESHOLD;
         #endif
-return OFF;
+        result = OFF;
     }
-    return OFF;
+
+    #ifdef USE_LEDS
+    if (result)
+        LED_OnBank(LED_BANK3, 0x8);
+    else
+        LED_OffBank(LED_BANK3, 0x8);
+    #endif
+
+    return result;
 }
 
 /*******************************************************************************
@@ -165,8 +175,9 @@ char IR_Init() {
     //dbprintf("\nInitializing the IR Sensor Module.");
 
     #ifdef USE_LEDS
-    LED_Init(LED_BANK3);
+    LED_Init(LED_BANK3 |LED_BANK1);
     LED_OffBank(LED_BANK3, 0xF);
+    LED_OffBank(LED_BANK1, 0xF);
 
     #endif
 
@@ -275,6 +286,7 @@ int main(void) {
             if (IsTransmitEmpty()) {
                 printf("\n %cLeft : %d \n %cRight : %d",leftTrig, k, rightTrig, l);
             }
+                wait();
             //time = GetTime();
         //}
         //while (!IsTransmitEmpty()); // bad, this is blocking code

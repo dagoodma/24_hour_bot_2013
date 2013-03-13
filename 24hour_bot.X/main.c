@@ -5,8 +5,8 @@
  * Created on February 21, 2012, 7:46 PM
  */
 
-//#define USE_MAIN
-#define USE_TRACK_TEST
+#define USE_MAIN
+//#define USE_TRACK_TEST
 
 //#define DEBUG
 
@@ -33,6 +33,8 @@
 #include "Util.h"
 #include "LED.h"
 #include <stdint.h>
+#include "pwm.h"
+#include "Shooter.h"
 //#include <stdio.h>
 
 
@@ -40,16 +42,25 @@
  * #DEFINES                                                                    *
  ******************************************************************************/
 
-#define MASTER_TIMER 15
-
-#define MASTER_TIMEOUT 11000
-
-#define SEARCH_SPEED            MIN_SPEED
+#define SEARCH_SPEED            2//LOWEST_SPEED
+#define FAST_SEARCH_SPEED       5//100 //MIN_SPEED
 
 // All delay times in (ms)
 #define START_TAPE_DELAY        2500
 #define ATTACK_REVERSE_DELAY    1000
 #define AVOID_ARC_DELAY         2000
+
+
+
+#define DEBUG_VERBOSE
+#ifdef DEBUG_VERBOSE
+    #define dbprintf(...) printf(__VA_ARGS__)
+#else
+    #define dbprintf(...)
+#endif
+
+
+#define FREQUENCY_PWM 250
 
 
 /*******************************************************************************
@@ -61,9 +72,10 @@ static enum { search, attack, avoidTape} topState;
 
 //-------- Search state variables -----------
 
-static enum { searchState_rightIR, searchState_leftIR } searchState;
+static enum { searchState_rightIR, searchState_leftIR, searchState_fastSearch } searchState;
 static enum { searchEvent_none, searchEvent_bothFound, searchEvent_rightFound,
-    searchEvent_leftLost, searchEvent_leftFound, searchEvent_rightLost } searchEvent;
+    searchEvent_leftLost, searchEvent_leftFound, searchEvent_rightLost,
+    searchEvent_anyFound, searchEvent_bothLost } searchEvent;
 
 //-------- Attack state variables -----------
 
@@ -114,11 +126,17 @@ void checkSearchEvents() {
     searchEvent = searchEvent_none;
 
     switch(searchState) {
+        case searchState_fastSearch:
+            if (IR_LeftTriggered() || IR_RightTriggered())
+                searchEvent = searchEvent_anyFound;
+            break;
         case searchState_leftIR:
             if (IR_LeftTriggered())
                 searchEvent = searchEvent_leftFound;
             else if (IR_LeftTriggered() && IR_RightTriggered())
                 searchEvent = searchEvent_bothFound;
+            else if (!IR_LeftTriggered() && !IR_RightTriggered())
+                searchEvent = searchEvent_bothLost;
             break;
         case searchState_rightIR:
             // TODO add tagert moves right exception
@@ -126,6 +144,8 @@ void checkSearchEvents() {
                 searchEvent = searchEvent_leftLost;
             else if (IR_LeftTriggered() && IR_RightTriggered())
                 searchEvent = searchEvent_bothFound;
+            else if (!IR_LeftTriggered() && !IR_RightTriggered())
+                searchEvent = searchEvent_bothLost;
             break;
         default:
             break;
@@ -136,27 +156,43 @@ void doSearchSM() {
     checkSearchEvents();
 
     switch (searchState) {
+        // search fast right
+        case searchState_fastSearch:
+            if (searchEvent == searchEvent_anyFound) {
+                searchState = searchState_rightIR;
+                Drive_Pivot(left,SEARCH_SPEED);
+            }
+            else {
+                Drive_Pivot(right, FAST_SEARCH_SPEED);
+            }
+            break;
+
         case searchState_leftIR:
             if (searchEvent == searchEvent_leftFound) {
-                Drive_Turn(pivot,right,SEARCH_SPEED);
+                Drive_Pivot(right,SEARCH_SPEED);
                 searchState = searchState_rightIR;
             }
             else if (searchEvent == searchEvent_bothFound) {
                 Drive_Stop();
                 // Transitions out
             }
-            else {
-                Drive_Turn(pivot,left,SEARCH_SPEED);
+            else if (searchEvent == searchEvent_bothLost) {
+                searchState = searchState_fastSearch;
+                Drive_Pivot(right, FAST_SEARCH_SPEED);
             }
             break;
         case searchState_rightIR:
-            if (searchEvent == searchEvent_rightLost) {
-                Drive_Turn(pivot,left,SEARCH_SPEED);
+            if (searchEvent == searchEvent_leftLost) {
+                Drive_Pivot(left,SEARCH_SPEED);
                 searchState = searchState_leftIR;
             }
             else if (searchEvent == searchEvent_bothFound) {
                 Drive_Stop();
                 // Transitions out
+            }
+            else if (searchEvent == searchEvent_bothLost) {
+                searchState = searchState_fastSearch;
+                Drive_Pivot(right, FAST_SEARCH_SPEED);
             }
             break;
         default:
@@ -200,7 +236,7 @@ void doAttackSM() {
         case attackState_transition:
             if (attackEvent == attackEvent_none) {
                 attackState = attackState_charge;
-                Drive_Forward(FULL_SPEED);
+                Drive_Forward(HALF_SPEED);
             }
             else if (attackEvent == attackEvent_lostTarget) {
                 Drive_Stop();
@@ -213,7 +249,7 @@ void doAttackSM() {
             else if (attackEvent == attackEvent_hitObject) {
                 attackState = attackState_reverse;
                 InitTimer(TIMER_ATTACK, ATTACK_REVERSE_DELAY);
-                Drive_Reverse(HALF_SPEED);
+                Drive_Reverse(LOW_SPEED);
             }
             break;
         case attackState_charge:
@@ -329,14 +365,18 @@ void startMasterSM() {
         | TAPE_BACKLEFT | BAT_VOLTAGE | IR_PINS;
     AD_Init(adPins);
 
+    int pwmPins = MOTOR_A_PWM |  MOTOR_B_PWM; //| DC_MOTOR_PWM;
+    PWM_Init(pwmPins, FREQUENCY_PWM);
+
     // Initialize modules
     IR_Init();
-    Tape_Init();
+    //Tape_Init();
     Drive_Init();
-    Bumper_Init();
+    //Bumper_Init();
 #ifdef USE_BALLER
     Baller_Init();
 #endif
+    Shooter_Init();
 
     startSearchSM();
 
@@ -346,21 +386,25 @@ void startMasterSM() {
 
 void startSearchSM() {
     topState = search;
-    searchState = searchState_rightIR;
+    searchState = searchState_fastSearch;
+    dbprintf("Started in state: search\n");
 }
 
 void startAttackSM() {
     topState = attack;
     attackState = attackState_transition;
-
+    Drive_Stop();
+    wait();
 #ifdef USE_BALLER
     Baller_Start();
 #endif
+    dbprintf("Started in state: attack\n");
 }
 
 void startAvoidTapeSM() {
     topState = avoidTape;
     avoidTapeState = avoidState_transition;
+    dbprintf("Started in state: avoidTape\n");
 }
 
 /*
@@ -379,7 +423,8 @@ void doTopSM() {
             if (attackEvent == attackEvent_lostTarget)
                 startSearchSM();
             if (attackEvent == attackEvent_hitTape)
-                startAvoidTapeSM();
+                startSearchSM();
+                //startAvoidTapeSM();
             break;
         case avoidTape:
             doAvoidTapeSM();
@@ -401,18 +446,18 @@ int main(void) {
     // ------------------------------- Main Loop -------------------------------
     while (1) {
         // Handle updates and module state machines
-        Tape_HandleSM();
+        //Tape_HandleSM();
         Drive_Update();
-        Bumper_Update();
+        //Bumper_Update();
         IR_Update();
         
         doTopSM();
     }
 
     exit:
-    Tape_End();
+    //Tape_End();
     Drive_Stop();
-    Bumper_End();
+    //Bumper_End();
     IR_End();
 
     return 0;
@@ -422,18 +467,21 @@ int main(void) {
 // Tracking test harness
 int main(void) {
     startMasterSM();
+    dbprintf("Initialized master state machine.\n");
     // ------------------------------- Main Loop -------------------------------
     while (1) {
         // Handle updates and module state machines
-        Tape_HandleSM();
+        //Tape_HandleSM();
         Drive_Update();
-        Bumper_Update();
+        //Bumper_Update();
         IR_Update();
+        Shooter_doSM();
 
         //doTopSM();
         doSearchSM();
         if (searchEvent == searchEvent_bothFound)
-            startSearchSM();
+            return SUCCESS;
+            //startSearchSM();
     }
 }
 

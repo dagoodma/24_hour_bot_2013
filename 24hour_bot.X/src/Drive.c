@@ -4,7 +4,6 @@
  *
  * Created on March 2, 2012
  */
-//#define DRIVE_TEST
 
 #include <xc.h>
 #include "serial.h"
@@ -14,11 +13,13 @@
 #include "AD.h"
 #include "LED.h"
 #include "Util.h"
+#include "timers.h"
 
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
-#define USE_BATPWM
+//#define DRIVE_TEST
+//#define USE_BATPWM
 #define DEBUG_VERBOSE
 #ifdef DEBUG_VERBOSE
     #define dbprintf(...) printf(__VA_ARGS__)
@@ -26,19 +27,15 @@
     #define dbprintf(...)
 #endif
 
-#define MOTOR_A_PWM PWM_PORTY10
-#define MOTOR_A_DIR PORTY09_LAT
-#define MOTOR_A_DIR_TRIS PORTY09_TRIS
-#define MOTOR_B_PWM PWM_PORTY12
-#define MOTOR_B_DIR PORTY11_LAT
-#define MOTOR_B_DIR_TRIS PORTY11_TRIS
+#define MOTOR_A_DIR         PORTY09_LAT
+#define MOTOR_A_DIR_TRIS    PORTY09_TRIS
+#define MOTOR_B_DIR         PORTY11_LAT
+#define MOTOR_B_DIR_TRIS    PORTY11_TRIS
 
 #define LEFT 0
 #define RIGHT 1
-#define FREQUENCY_PWM 250
-#define BAT_MAX 305 // (1023 * Vbat) / (10 * 3.3) => Vbat = 9.8 V
+#define BAT_MAX 713 // (1023 * Vbat) / (10 * 3.3) => Vbat = 9.8 V
 #define UPDATE_DELAY 100
-#define TIMER_NUM 5
 
 
 /*******************************************************************************
@@ -63,19 +60,19 @@ static void SetDirection(int motor, int direction);
  ******************************************************************************/
 static void SetDirection(int motor, int direction) {
 
-    if (motor == A) {
+    //if (motor == A) {
         MOTOR_A_DIR = !direction;
-    }
-    else {
+    //}
+    //else {
         MOTOR_B_DIR = !direction;
-    }
+    //}
 }
 
-static char SetSpeed(int motor, char speed) {
+static char SetSpeed(int motor, unsigned int speed) {
     // TODO add error checking
     motorSpeed[motor] =  speed;
     //printf("\nPWM should be = %f", speed * 80.0);
- 
+ /*
     unsigned int pwm = 0;
     if (speed > 0) {
 #ifdef USE_BATPWM
@@ -84,18 +81,19 @@ static char SetSpeed(int motor, char speed) {
         int battery = 0;
 #endif
         float pwm_modifier = 100.0 * ((1.0 - 1.0*(battery/BAT_MAX)) * 2.15);
-        //printf("\nMultiplier =%f", max((int)pwm_modifier, 0));
+        printf("\nMultiplier =%f", max((int)pwm_modifier, 0));
         pwm = (unsigned int)(speed * 90.0 + max((int)pwm_modifier, 0));
+        //pwm = speed;
     }
     motorPWMValue[motor] = pwm;
     //printf("\nPWM is=%i", pwm);
     pwm = min(pwm, 1000);
     pwm = max(pwm, 0);
-
-    SetDutyCycle(motorPWM[motor], pwm);
+*/
+    SetDutyCycle(motorPWM[motor], speed);
 }
 
-void SetMotor(int motor, int direction, char speed) {
+void SetMotor(int motor, int direction, unsigned int speed) {
     SetDirection(motor, direction);
     SetSpeed(motor, speed);
 }
@@ -110,25 +108,55 @@ char Drive_Init(void) {
     MOTOR_A_DIR_TRIS = 0;
     MOTOR_B_DIR_TRIS = 0;
 
-    PWM_Init(MOTOR_A_PWM |  MOTOR_B_PWM, FREQUENCY_PWM);
     Drive_Stop();
-    InitTimer(TIMER_NUM,UPDATE_DELAY);
+    InitTimer(TIMER_DRIVE,UPDATE_DELAY);
 
     return SUCCESS;
 }
 
 char Drive_Update(void) {
     /*
-    if (IsTimerExpired(TIMER_NUM)) {
+    if (IsTimerExpired(TIMER_DRIVE)) {
         SetSpeed(A, motorSpeed[A]);
         SetSpeed(B, motorSpeed[B]);
-        InitTimer(TIMER_NUM, UPDATE_DELAY);
+        InitTimer(TIMER_DRIVE, UPDATE_DELAY);
     }
      */
     return SUCCESS;
 }
 
-char Drive_Turn(enum turnType type, enum turnDir dir, char speed) {
+Drive_Pivot(enum turnDir dir, unsigned int speed) {
+    switch (dir) {
+        case right:
+            SetMotor(B, FORWARD, 0);
+            SetMotor(A, FORWARD, speed);
+            break;
+        case left:
+            SetMotor(B, FORWARD, speed);
+            SetMotor(A, FORWARD, 0);
+            break;
+        default:
+            break;
+    }
+}
+
+
+Drive_Arc(enum turnDir dir, unsigned int speed) {
+    switch (dir) {
+        case right:
+            SetMotor(A, FORWARD, speed);
+            SetMotor(B, REVERSE, speed);
+            break;
+        case left:
+            SetMotor(A, REVERSE, speed);
+            SetMotor(B, FORWARD, 0);
+            break;
+        default:
+            break;
+    }
+}
+
+char Drive_Turn(enum turnType type, enum turnDir dir, unsigned int speed) {
     static char previousTurn;
     switch(type){
         case pivot:
@@ -239,13 +267,13 @@ char Drive_Turn(enum turnType type, enum turnDir dir, char speed) {
     return SUCCESS;
 }
 
-char Drive_Forward(char speed){
+char Drive_Forward(unsigned int speed){
     SetMotor(A, FORWARD, speed);
     SetMotor(B, FORWARD, speed);
     return SUCCESS;
 }
 
-char Drive_Reverse(char speed){
+char Drive_Reverse(unsigned int speed){
     SetMotor(A, REVERSE, speed);
     SetMotor(B, REVERSE, speed);
 
@@ -262,7 +290,7 @@ char Drive_Stop(void) {
 /*******************************************************************************
  * TEST HARNESS                                                                *
  ******************************************************************************/
-#define DRIVE_TEST
+//#define DRIVE_TEST
 #ifdef DRIVE_TEST
 
 #define DELAY() for(i=0;i < NOPCOUNT; i++) __asm("nop")
@@ -277,34 +305,27 @@ char main(){
     AD_Init(BAT_VOLTAGE);
     LED_Init(LED_BANK3);
     LED_OffBank(LED_BANK3, 0xf);
-    DELAY();
+    wait();
     int pwm;
 
     while(1) {
         //Drive_Stop();
-        DELAY();
-        Drive_Forward(10);
+        wait();
+        //Drive_Forward(MIN_SPEED);
         printf("\nFORWARD! speed=%u pwm=%u", motorSpeed[A], motorPWMValue[A]);
-        DELAY();
-        DELAY();
-        DELAY();
-        DELAY();
-        DELAY();
-        DELAY();
-        Drive_Turn(pivot,left,HALF_SPEED);
-        DELAY();
-        DELAY();
-        DELAY();
-        DELAY();
-        DELAY();
-        DELAY();
-        Drive_Turn(pivot,right,HALF_SPEED);
-        DELAY();
-        DELAY();
-        DELAY();
-        DELAY();
-        DELAY();
-        DELAY();
+        //for (i = 0; i < 100; i++)
+        //    wait();
+        Drive_Stop();
+        Drive_Pivot(left, 1);
+        for (i = 0; i < 1; i++)
+            wait();
+        Drive_Stop();
+        Drive_Pivot(right, 1);
+        for (i = 0; i < 1; i++)
+            wait();
+        Drive_Stop();
+        for (i = 0; i < 1; i++)
+            wait();
     }
 }
 
