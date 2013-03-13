@@ -39,7 +39,7 @@
 #define AVOID_ARC_DELAY         2000
 
 
-#define DEBUG_VERBOSE
+//#define DEBUG_VERBOSE
 #ifdef DEBUG_VERBOSE
     #define dbprintf(...)   do { printf(__VA_ARGS__); wait(); } while(0)
 #else
@@ -48,6 +48,8 @@
 
 
 #define FREQUENCY_PWM 250
+
+#define SEARCH_LOST_DELAY   1000
 
 
 /*******************************************************************************
@@ -59,9 +61,11 @@ static enum { search, attack } topState;
 
 //-------- Search state variables -----------
 
-static enum { searchState_rightIR, searchState_leftIR, searchState_fastSearch } searchState;
+static enum { searchState_rightIR, searchState_leftIR, searchState_fastSearch,
+searchState_transition } searchState;
 static enum { searchEvent_none, searchEvent_bothFound, searchEvent_rightFound,
-    searchEvent_leftFound, searchEvent_anyFound, searchEvent_bothLost } searchEvent;
+    searchEvent_leftFound, searchEvent_anyFound, searchEvent_bothLost,
+searchEvent_leftLost, searchEvent_rightLost } searchEvent;
 
 //-------- Attack state variables -----------
 
@@ -97,6 +101,7 @@ void doMasterSM();
 // ----------------------------------------------------------------------------
 // ------------------------------- SearchSM -----------------------------------
 // ----------------------------------------------------------------------------
+#define USE_SIMPLE_SEARCH
 #ifndef USE_SIMPLE_SEARCH
 void checkSearchEvents() {
     searchEvent = searchEvent_none;
@@ -111,7 +116,8 @@ void checkSearchEvents() {
                 searchEvent = searchEvent_bothFound;
             else if (IR_LeftTriggered())
                 searchEvent = searchEvent_leftFound;
-            else if (!IR_LeftTriggered() && !IR_RightTriggered())
+            else if (IsTimerExpired(TIMER_SEARCH)
+                    && !IR_LeftTriggered() && !IR_RightTriggered())
                 searchEvent = searchEvent_bothLost;
             break;
         case searchState_rightIR:
@@ -120,7 +126,8 @@ void checkSearchEvents() {
                 searchEvent = searchEvent_bothFound;
             if (IR_RightTriggered())
                 searchEvent = searchEvent_rightFound;
-            else if (!IR_LeftTriggered() && !IR_RightTriggered())
+            else if (IsTimerExpired(TIMER_SEARCH)
+                    && !IR_LeftTriggered() && !IR_RightTriggered())
                 searchEvent = searchEvent_bothLost;
             break;
         default:
@@ -138,6 +145,7 @@ void doSearchSM() {
             if (searchEvent == searchEvent_anyFound) {
                 dbprintf("Search: Fast search found IR (%x)\n",searchState);
                 searchState = searchState_leftIR;
+                InitTimer(TIMER_SEARCH,SEARCH_LOST_DELAY);
                 Drive_Pivot(left,SLOW_SEARCH_SPEED);
             }
             else {
@@ -149,6 +157,7 @@ void doSearchSM() {
             // turn left slowly till left sensor hits
             if (searchEvent == searchEvent_leftFound) {
                 dbprintf("Search: Left IR triggered (%x)\n",searchState);
+                InitTimer(TIMER_SEARCH,SEARCH_LOST_DELAY);
                 Drive_Pivot(right,SLOW_SEARCH_SPEED);
                 searchState = searchState_rightIR;
             }
@@ -165,6 +174,7 @@ void doSearchSM() {
         case searchState_rightIR:
             if (searchEvent == searchEvent_rightFound) {
                 dbprintf("Search: Right IR triggered (%x)\n",searchState);
+                InitTimer(TIMER_SEARCH,SEARCH_LOST_DELAY);
                 Drive_Pivot(left,SLOW_SEARCH_SPEED);
                 searchState = searchState_leftIR;
             }
@@ -186,6 +196,13 @@ void checkSearchEvents() {
     searchEvent = searchEvent_none;
 
     switch(searchState) {
+        case searchState_transition:
+            if (IR_LeftTriggered() && IR_RightTriggered())
+                searchEvent = searchEvent_bothFound;
+            else if (!IR_RightTriggered())
+                searchEvent = searchEvent_rightLost;
+            else if (!IR_LeftTriggered())
+                searchEvent = searchtLost;
         case searchState_leftIR:
             if (IR_LeftTriggered() && IR_RightTriggered())
                 searchEvent = searchEvent_bothFound;
@@ -193,10 +210,10 @@ void checkSearchEvents() {
                 searchEvent = searchEvent_leftFound;
             break;
         case searchState_rightIR:
-            if (!IR_LeftTriggered())
-                searchEvent = searchEvent_leftLost;
-            else if (IR_LeftTriggered() && IR_RightTriggered())
+            if (IR_LeftTriggered() && IR_RightTriggered())
                 searchEvent = searchEvent_bothFound;
+            else if (IR_LeftTriggered())
+                searchEvent = searchEvent_rightFound;
             break;
         default:
             break;
@@ -207,9 +224,28 @@ void doSearchSM() {
     checkSearchEvents();
 
     switch (searchState) {
+        case searchState_transition:
+            if (searchEvent == searchEvent_rightLost) {
+                Drive_Pivot(right,SLOW_SEARCH_SPEED);
+                searchState = searchState_rightIR;
+            }
+            else if (searchEvent == searchEvent_bothFound) {
+                Drive_Stop();
+                // Transitions out
+            }
+            else if (searchEvent == searchEvent_leftLost) {
+
+                Drive_Pivot(left,SLOW_SEARCH_SPEED);
+                searchState = searchState_leftIR;
+            }
+            else {
+                Drive_Stop();
+            }
+            break;
+
         case searchState_leftIR:
             if (searchEvent == searchEvent_leftFound) {
-                Drive_Turn(pivot,right,SEARCH_SPEED);
+                Drive_Pivot(left,SLOW_SEARCH_SPEED);
                 searchState = searchState_rightIR;
             }
             else if (searchEvent == searchEvent_bothFound) {
@@ -217,12 +253,12 @@ void doSearchSM() {
                 // Transitions out
             }
             else {
-                Drive_Turn(pivot,left,SEARCH_SPEED);
+                Drive_Pivot(left,SLOW_SEARCH_SPEED);
             }
             break;
         case searchState_rightIR:
-            if (searchEvent == searchEvent_lefttLost) {
-                Drive_Turn(pivot,left,SEARCH_SPEED);
+            if (searchEvent == searchEvent_rightFound) {
+                Drive_Pivot(left,SLOW_SEARCH_SPEED);
                 searchState = searchState_leftIR;
             }
             else if (searchEvent == searchEvent_bothFound) {
@@ -336,7 +372,11 @@ void startMasterSM() {
 
 void startSearchSM() {
     topState = search;
+#ifndef USE_SIMPLE_SEARCH
     searchState = searchState_fastSearch;
+#else
+    searchState = searchState_transition;
+#endif
     dbprintf("Started in state: search\n");
 }
 
@@ -409,7 +449,7 @@ int main(void) {
 
         doSearchSM();
         if (searchEvent == searchEvent_bothFound)
-            Drive_Stop();
+            startSearchSM();
     }
 }
 

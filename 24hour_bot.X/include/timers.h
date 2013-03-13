@@ -31,6 +31,7 @@
 #define TIMER_ATTACK            7
 #define TIMER_TAPEAVOID         8
 #define TIMER_SHOOT             9
+#define TIMER_SEARCH            10
 
 
 /*******************************************************************************
