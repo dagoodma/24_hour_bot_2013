@@ -33,7 +33,7 @@
 #define HALF_SPEED      370
 #define FULL_SPEED      1000
 #define LOW_SPEED       300
-#define MIN_SPEED       300
+#define MIN_SPEED       325
 
 enum turnType{pivot, rightAng, soft, hard};
 enum turnDir{right, left, same, opposite};
@@ -80,4 +80,7 @@ char Drive_Reverse(unsigned int speed);
  * @date */
 char Drive_Stop(void);
 
+
+
+void Drive_Pivot(enum turnDir dir, unsigned int speed);
 #endif

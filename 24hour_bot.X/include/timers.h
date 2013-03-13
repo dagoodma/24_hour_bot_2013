@@ -32,6 +32,7 @@
 #define TIMER_TAPEAVOID         8
 #define TIMER_SHOOT             9
 #define TIMER_SEARCH            10
+#define TIMER_SHOOTSTART        11
 
 
 /*******************************************************************************

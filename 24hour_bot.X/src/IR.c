@@ -133,9 +133,9 @@ char IsRightTriggered() {
 
     #ifdef USE_LEDS
     if (result)
-        LED_OnBank(LED_BANK1, 0x8);
+        LED_OnBank(LED_BANK1, 0x1);
     else
-        LED_OffBank(LED_BANK1, 0x8);
+        LED_OffBank(LED_BANK1, 0x1);
     #endif
     return result;
 }

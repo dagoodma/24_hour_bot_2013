@@ -6,7 +6,7 @@
  */
 
 #define USE_MAIN
-#define USE_TRACK_TEST
+//#define USE_TRACK_TEST
 
 //#define DEBUG
 
@@ -37,7 +37,9 @@
 // All delay times in (ms)
 #define ATTACK_REVERSE_DELAY    1000
 
-#define SEARCH_OVERSHOOT_DELAY  550
+#define SEARCH_OVERSHOOT_DELAY  200
+
+#define SHOOT_START_DELAY       400
 
 
 
@@ -100,6 +102,18 @@ void doMasterSM();
 // ----------------------------------------------------------------------------
 // ------------------------------- SearchSM -----------------------------------
 // ----------------------------------------------------------------------------
+
+#ifdef USE_SIMPLE_SEARCH
+void doSearchSM() {
+    //checkSearchEvents();
+    
+    if (IR_LeftTriggered() && IR_RightTriggered()) {
+        searchEvent = searchEvent_bothFound;
+        Drive_Stop();
+    }
+}
+#else
+
 void checkSearchEvents() {
     searchEvent = searchEvent_none;
 
@@ -183,7 +197,7 @@ void doSearchSM() {
             break;
     }
 }
-
+#endif
 
 // ----------------------------------------------------------------------------
 // ------------------------------- AttackSM -----------------------------------
@@ -218,7 +232,8 @@ void doAttackSM() {
             if (attackEvent == attackEvent_none) {
                 if (Shooter_hasAmmo()) {
                     attackState = attackState_shoot;
-                    Shooter_startShooting();
+                    if (IsTimerExpired(TIMER_SHOOTSTART))
+                        Shooter_startShooting();
                 }
                 else {
                     attackState = attackState_charge;
@@ -275,10 +290,11 @@ void startMasterSM() {
 
     // Initialize modules
     IR_Init();
-    //Tape_Init();
     Drive_Init();
-    //Bumper_Init();
+    Bumper_Init();
     Shooter_Init();
+
+    InitTimer(TIMER_SHOOTSTART,SHOOT_START_DELAY);
 
     startSearchSM();
 }
@@ -286,8 +302,13 @@ void startMasterSM() {
 
 void startSearchSM() {
     topState = search;
+#ifdef USE_SIMPLE_SEARCH
+    Drive_Pivot(right,SLOW_SEARCH_SPEED);
+    searchState = searchState_transition;
+#else
     Drive_Stop();
     searchState = searchState_transition;
+#endif
 
     dbprintf("Started in state: search\n");
 }
@@ -307,7 +328,11 @@ void doTopSM() {
     switch (topState) {
         case search:
             doSearchSM();
+#ifdef USE_SIMPLE_SEARCH
+            if (searchEvent == searchEvent_bothFound)
+#else
             if (searchEvent == searchEvent_bothConfirmed)
+#endif
                 startAttackSM();
             break;
         case attack:
@@ -327,11 +352,12 @@ void doTopSM() {
 #ifndef USE_TRACK_TEST
 int main(void) {
     startMasterSM();
+    printf("Started master SM\n");
     // ------------------------------- Main Loop -------------------------------
     while (1) {
         // Handle updates and module state machines
         Drive_Update();
-        //Bumper_Update();
+        Bumper_Update();
         IR_Update();
         Shooter_doSM();
         
@@ -340,7 +366,7 @@ int main(void) {
 
     exit:
     Drive_Stop();
-    //Bumper_End();
+    Bumper_End();
     IR_End();
 
     return 0;

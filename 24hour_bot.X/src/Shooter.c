@@ -30,12 +30,13 @@
 #define MAXPULSE 2000
 
 // Positions for open and close
-#define SERVO_TOP_CLOSE_POSITION 2000
-#define SERVO_TOP_OPEN_POSITION 1000
+#define SERVO_TOP_CLOSE_POSITION 1400
+#define SERVO_TOP_OPEN_POSITION 2000
 #define SERVO_BOTTOM_CLOSE_POSITION 1000
 #define SERVO_BOTTOM_OPEN_POSITION 2000
 
-#define WAIT_DELAY     1000
+#define SPOOLUP_DELAY     4000
+#define WAIT_DELAY      1500
 #define LOAD_DELAY      1000
 #define RELEASE_DELAY   1500
 
@@ -116,7 +117,8 @@ void Shooter_doSM() {
 void Shooter_startShooting() {
     if (Shooter_hasAmmo() && !Shooter_isShooting()) {
         state = shootWait;
-        InitTimer(TIMER_SHOOT,WAIT_DELAY);
+        
+        InitTimer(TIMER_SHOOT,SPOOLUP_DELAY);
 
         SetDutyCycle(DC_MOTOR_PWM, MOTOR_ON_CYCLE);
     }
@@ -127,6 +129,8 @@ void Shooter_stopShooting() {
     closeBottomServo();
     closeTopServo();
     SetDutyCycle(DC_MOTOR_PWM, 0);
+
+    RC_End();
 }
 
 char Shooter_hasAmmo() {
@@ -155,12 +159,13 @@ void closeBottomServo() {
     RC_SetPulseTime(SERVO_BOTTOM, SERVO_BOTTOM_CLOSE_POSITION);
 }
 
+
 //#define SHOOTER_TEST
 #ifdef SHOOTER_TEST
 
 
 #define FREQUENCY_PWM 250
-
+//#define SERVO_LIMIT_TEST
 int main() {
     SERIAL_Init();
     INTEnableSystemMultiVectoredInt();
@@ -172,12 +177,14 @@ int main() {
     printf("\nHello World shooter");
     wait();
 
+#ifndef SERVO_LIMIT_TEST
     Shooter_startShooting();
 
     while (Shooter_hasAmmo()) {
         Shooter_doSM();
     }
-#ifdef SERVO_LIMIT_TEST
+
+#else
     int i;
     while (1) {
         for (i = 0; i<= 3; i++) {

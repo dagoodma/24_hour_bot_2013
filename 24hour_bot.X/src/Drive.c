@@ -129,7 +129,7 @@ char Drive_Update(void) {
     return SUCCESS;
 }
 
-Drive_Pivot(enum turnDir dir, unsigned int speed) {
+void Drive_Pivot(enum turnDir dir, unsigned int speed) {
     switch (dir) {
         case right:
             SetMotor(A, FORWARD, 0);
